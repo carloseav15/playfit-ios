@@ -1,0 +1,23 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Xcode
+*.xcuserdata/
+DerivedData/
+*.xcbkptlist
+*.xcuserstate
+
+# Build outputs
+build/
+build_dir/
+
+# OS noise
+.DS_Store
+*.log
+
+# Environment
+.env
+
+# Agent artifacts
+.claude/
