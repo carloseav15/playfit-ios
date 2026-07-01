@@ -94,7 +94,7 @@
 				};
 			};
 			buildConfigurationList = 0F1000112D00000000000001 /* Build configuration list for PBXProject "PlayfitIOS" */;
-			compatibilityVersion = "Xcode 16.0";
+			compatibilityVersion = "Xcode 16.0.Superseded.1";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -106,7 +106,6 @@
 			packageReferences = (
 				0F1000122D00000000000001 /* XCLocalSwiftPackageReference "." */,
 			);
-			preferredProjectObjectVersion = 70;
 			productRefGroup = 0F10000C2D00000000000001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -262,7 +261,7 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 83L6KR4J3A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PlayfitIOS/Info.plist;
@@ -296,7 +295,7 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 83L6KR4J3A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PlayfitIOS/Info.plist;
@@ -327,15 +326,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0F1000112D00000000000001 /* Build configuration list for PBXProject "PlayfitIOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				0F1000132D00000000000001 /* Debug */,
-				0F1000142D00000000000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		0F10000D2D00000000000001 /* Build configuration list for PBXNativeTarget "PlayfitIOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -345,12 +335,21 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		0F1000112D00000000000001 /* Build configuration list for PBXProject "PlayfitIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0F1000132D00000000000001 /* Debug */,
+				0F1000142D00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
 		0F1000122D00000000000001 /* XCLocalSwiftPackageReference "." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ".";
+			relativePath = .;
 		};
 /* End XCLocalSwiftPackageReference section */
 

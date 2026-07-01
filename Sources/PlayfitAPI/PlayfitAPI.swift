@@ -16,10 +16,16 @@ public enum PlayfitAPI {
             }
         }
 
+        // NOTE: 127.0.0.1 only reaches the Mac itself — it works from the Simulator
+        // (shares the Mac's network stack) but not from a physical device. Using the
+        // Mac's LAN IP instead lets a real iPhone on the same WiFi reach local dev.
+        // Update this if your Mac's IP changes (`ipconfig getifaddr en0`).
+        private static let localDevHost = "192.168.1.153"
+
         public var url: URL {
             switch self {
             case .development:
-                return URL(string: "http://127.0.0.1:3000")!
+                return URL(string: "http://\(Self.localDevHost):3000")!
             case .production:
                 return URL(string: "https://playfit-gold.vercel.app")!
             }
@@ -30,11 +36,9 @@ public enum PlayfitAPI {
         public var supabaseURL: URL {
             switch self {
             case .development:
-                return URL(string: "http://127.0.0.1:54321")!
+                return URL(string: "http://\(Self.localDevHost):54321")!
             case .production:
-                // TODO: production Supabase project URL not yet available to this app.
-                // Auth will fail fast with an invalidURL error until this is set.
-                return URL(string: "https://playfit-production-supabase.invalid")!
+                return URL(string: "https://vhhnwjuwqbspvllvppnn.supabase.co")!
             }
         }
 
@@ -45,8 +49,7 @@ public enum PlayfitAPI {
             case .development:
                 return "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
             case .production:
-                // TODO: production anon/publishable key not yet available to this app.
-                return ""
+                return "sb_publishable_In29cjV8e5T_obAhkwTZkw_ndu8R_ch"
             }
         }
     }
@@ -58,7 +61,7 @@ public enum PlayfitAPI {
                let env = Environment(rawValue: saved) {
                 return env
             }
-            return .development
+            return .production
             #else
             return .production
             #endif

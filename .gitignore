@@ -3,7 +3,8 @@
 .swiftpm/
 
 # Xcode
-*.xcuserdata/
+**/xcuserdata/
+**/*.xcuserdata/
 DerivedData/
 *.xcbkptlist
 *.xcuserstate

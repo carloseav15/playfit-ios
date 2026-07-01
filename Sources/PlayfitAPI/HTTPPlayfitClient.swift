@@ -104,6 +104,21 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
         return envelope.state?.gameStates ?? [:]
     }
 
+    public func fetchOnboardingCompletedAt() async throws -> String? {
+        let url = urlWithDevice("/api/profile")
+        let request = makeRequest(url: url)
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.unexpectedResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            if httpResponse.statusCode == 404 { return nil }
+            throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
+        }
+        let envelope = try decoder.decode(ProfileEnvelope.self, from: data)
+        return envelope.state?.onboarding?.onboardingCompletedAt
+    }
+
     public func saveGameState(gameId: String, state: UserGameState) async throws {
         let url = urlWithDevice("/api/profile/games/\(gameId)")
         var request = makeRequest(url: url)
@@ -288,6 +303,11 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 private struct ProfileState: Codable {
     let gameStates: [String: UserGameState]?
     let profile: UserProfile?
+    let onboarding: OnboardingState?
+}
+
+private struct OnboardingState: Codable {
+    let onboardingCompletedAt: String?
 }
 
 private struct ProfileEnvelope: Codable {

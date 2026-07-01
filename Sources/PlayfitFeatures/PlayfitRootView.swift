@@ -45,7 +45,16 @@ public struct PlayfitRootView: View {
                     )
                     .environment(\.playViewModel, viewModel)
                     .preferredColorScheme(appearanceMode.colorScheme)
-                    .sheet(isPresented: $showSignInSheet) {
+                    .sheet(isPresented: $showSignInSheet, onDismiss: {
+                        // A successful sign-in from the landing screen has nowhere
+                        // else to go: if the account has no completed onboarding on
+                        // the server, route into onboarding instead of leaving the
+                        // user stuck looking at the same landing screen.
+                        if viewModel.authSession != nil && !viewModel.onboardingCompleted {
+                            viewModel.onboardingStarted = true
+                            showOnboarding = true
+                        }
+                    }) {
                         SignInSheetView(authEmail: $authEmail)
                             .environment(\.playViewModel, viewModel)
                     }

@@ -28,6 +28,7 @@ public protocol PlayfitAPIClient: AnyObject, Sendable {
     func fetchPicks() async throws -> [RankedRecommendation]
     func fetchProfile() async throws -> UserProfile?
     func fetchGameStates() async throws -> [String: UserGameState]
+    func fetchOnboardingCompletedAt() async throws -> String?
     func searchGames(query: String) async throws -> [Game]
     func saveGameState(gameId: String, state: UserGameState) async throws
     func saveProfile(profile: UserProfile, gameStates: [String: UserGameState], onboarding: OnboardingPayload) async throws

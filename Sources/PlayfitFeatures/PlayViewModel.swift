@@ -369,7 +369,7 @@ public final class PlayViewModel: @unchecked Sendable {
         let newSession = try await client.signIn(email: email, password: password)
         authSession = newSession
         AuthSessionStore.save(newSession)
-        try? await syncProfileToServer()
+        await adoptServerAccountState()
         showToast("Signed in", style: .success)
     }
 
@@ -383,7 +383,7 @@ public final class PlayViewModel: @unchecked Sendable {
         }
         authSession = newSession
         AuthSessionStore.save(newSession)
-        try? await syncProfileToServer()
+        await adoptServerAccountState()
         showToast("Account created", style: .success)
         return true
     }
@@ -394,8 +394,22 @@ public final class PlayViewModel: @unchecked Sendable {
         let newSession = try await client.signInWithGoogle()
         authSession = newSession
         AuthSessionStore.save(newSession)
-        try? await syncProfileToServer()
+        await adoptServerAccountState()
         showToast("Signed in with Google", style: .success)
+    }
+
+    /// Pushes any local profile up (triggering the server-side anonymous-device
+    /// migration if this account had none), then pulls the account's real state
+    /// back down — including onboarding completion, which a plain push never sets.
+    @MainActor
+    private func adoptServerAccountState() async {
+        try? await syncProfileToServer()
+        await syncIfOnline()
+        guard let apiClient,
+              let completedAt = try? await apiClient.fetchOnboardingCompletedAt() else { return }
+        onboardingCompleted = true
+        onboardingCompletedAt = completedAt
+        storage.saveProfile(profile, platformIds: selectedPlatformIds, onboardingCompleted: true)
     }
 
     @MainActor
