@@ -19,6 +19,10 @@ public struct AuthSession: Codable, Sendable, Equatable {
     public var isExpired: Bool {
         Date() >= expiresAt
     }
+
+    public func expires(within interval: TimeInterval) -> Bool {
+        Date().addingTimeInterval(interval) >= expiresAt
+    }
 }
 
 /// Stores the auth session in the Keychain rather than UserDefaults, since it

@@ -5,10 +5,13 @@ import SwiftUI
 
 public struct TodayView: View {
     @Environment(\.playViewModel) private var viewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedEntry: RankedRecommendation?
     @State private var showReasonPicker = false
     @State private var showAlreadyPlayed = false
     @State private var slowLoading = false
+    @State private var showPlatformsSheet = false
 
     public init() {}
 
@@ -30,6 +33,7 @@ public struct TodayView: View {
                         errorState(error)
                     } else if let primary = viewModel.primary {
                         primarySection(primary)
+                        header
 
                         if !viewModel.alternatives.isEmpty {
                             alternativesSection
@@ -40,6 +44,9 @@ public struct TodayView: View {
                 }
                 .padding(PlayfitSpacing.md)
             }
+            .refreshable {
+                await viewModel.syncIfOnline()
+            }
         }
         .navigationTitle("Play Next")
     }
@@ -49,10 +56,10 @@ public struct TodayView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: PlayfitSpacing.sm) {
             Text(recommendationGroupTitle(for: viewModel.visiblePool))
-                .font(.largeTitle.bold())
+                .font(.title2.bold())
 
             Text("Find what to play next, save promising picks, and keep the reasons visible. Only games available on your selected platforms are suggested.")
-                .font(.body)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             let profile = viewModel.profile
@@ -142,6 +149,11 @@ public struct TodayView: View {
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            Button("Try Again") {
+                slowLoading = false
+                Task { await viewModel.syncIfOnline() }
+            }
+            .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)
@@ -158,6 +170,21 @@ public struct TodayView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+            }
+            Button("Add Platforms") {
+                showPlatformsSheet = true
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.playfitAccent)
+            .sheet(isPresented: $showPlatformsSheet) {
+                NavigationStack {
+                    PlatformSelectionView()
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { showPlatformsSheet = false }
+                            }
+                        }
+                }
             }
             if !viewModel.excludedIds.isEmpty {
                 Text("All current candidates were skipped in this session.")
@@ -178,10 +205,7 @@ public struct TodayView: View {
     // MARK: - Primary Section
 
     private func primarySection(_ entry: RankedRecommendation) -> some View {
-        VStack(alignment: .leading, spacing: PlayfitSpacing.lg) {
-            header
-            primaryCard(entry)
-        }
+        primaryCard(entry)
     }
 
     // MARK: - Primary Card
@@ -189,9 +213,12 @@ public struct TodayView: View {
     private func primaryCard(_ entry: RankedRecommendation) -> some View {
         PlayfitGlassCard {
             VStack(alignment: .leading, spacing: PlayfitSpacing.md) {
-                PlayfitCoverPlaceholder(title: entry.game.title)
+                PlayfitGameCover(game: entry.game)
 
-                HStack(alignment: .firstTextBaseline) {
+                let headerLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: PlayfitSpacing.sm))
+                    : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+                headerLayout {
                     VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
                         Text("Play this next")
                             .font(.caption.weight(.semibold))
@@ -202,7 +229,9 @@ public struct TodayView: View {
                             .font(.title.bold())
                     }
 
-                    Spacer()
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        Spacer()
+                    }
 
                     ScoreBadge(score: Double(entry.affinityScore) / 100.0)
                 }
@@ -220,7 +249,7 @@ public struct TodayView: View {
                             .font(.caption.weight(.medium))
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Color.blue)
+                    .foregroundStyle(Color.playfitAccent)
                 }
 
                 if !entry.fitReasons.isEmpty {
@@ -240,9 +269,21 @@ public struct TodayView: View {
                         systemImage: viewModel.isPicked(entry.game.id) ? "bookmark.fill" : "bookmark"
                     )
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(viewModel.isPicked(entry.game.id) ? AnyShapeStyle(.secondary) : AnyShapeStyle(.white))
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(
+                                viewModel.isPicked(entry.game.id)
+                                    ? AnyShapeStyle(Color.secondary.opacity(0.15))
+                                    : colorScheme == .dark
+                                        ? AnyShapeStyle(LinearGradient(colors: [.playfitAccent, .playfitIndigo], startPoint: .leading, endPoint: .trailing))
+                                        : AnyShapeStyle(Color.playfitAccent)
+                            )
+                    }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.plain)
                 .disabled(viewModel.isPicked(entry.game.id))
 
                 if showReasonPicker {
@@ -252,7 +293,10 @@ public struct TodayView: View {
                     }
                 }
 
-                HStack(spacing: PlayfitSpacing.md) {
+                let actionLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(spacing: PlayfitSpacing.sm))
+                    : AnyLayout(HStackLayout(spacing: PlayfitSpacing.md))
+                actionLayout {
                     Button {
                         selectedEntry = entry
                         showAlreadyPlayed = true
@@ -262,7 +306,7 @@ public struct TodayView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
-                    .tint(.green)
+                    .tint(.playfitPositive)
 
                     Button {
                         viewModel.notForMe(entry)
@@ -343,13 +387,17 @@ public struct TodayView: View {
 // MARK: - Compact Row
 
 private struct CompactRecommendationRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let entry: RankedRecommendation
 
     var body: some View {
         PlayfitGlassCard {
-            HStack(spacing: PlayfitSpacing.md) {
-                PlayfitCoverPlaceholder(title: entry.game.title)
-                    .frame(width: 76)
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: PlayfitSpacing.sm))
+                : AnyLayout(HStackLayout(spacing: PlayfitSpacing.md))
+            layout {
+                PlayfitGameCover(game: entry.game)
+                    .frame(width: dynamicTypeSize.isAccessibilitySize ? 120 : 76)
 
                 VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
                     Text("Worth checking")

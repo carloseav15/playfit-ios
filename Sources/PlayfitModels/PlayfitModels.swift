@@ -55,6 +55,30 @@ public struct Game: Identifiable, Hashable, Sendable {
     }
 }
 
+extension Game {
+    public func resolvedCoverURL(baseURL: URL) -> URL? {
+        if let coverURL, let scheme = coverURL.scheme?.lowercased(), ["https", "http"].contains(scheme) {
+            return coverURL
+        }
+
+        let trimmedPath = coverPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let absolute = URL(string: trimmedPath),
+           let scheme = absolute.scheme?.lowercased(),
+           ["https", "http"].contains(scheme) {
+            return absolute
+        }
+        if trimmedPath.hasPrefix("/") {
+            return URL(string: trimmedPath, relativeTo: baseURL)?.absoluteURL
+        }
+
+        guard !id.isEmpty else { return nil }
+        return baseURL
+            .appendingPathComponent("covers")
+            .appendingPathComponent("games")
+            .appendingPathComponent("\(id).jpg")
+    }
+}
+
 extension Game: Codable {
     enum CodingKeys: String, CodingKey {
         case id = "gameId"
@@ -215,6 +239,5 @@ public struct Platform: Codable, Identifiable, Hashable, Sendable {
         self.sortOrder = sortOrder
     }
 }
-
 
 

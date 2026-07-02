@@ -28,8 +28,8 @@ public struct AlreadyPlayedSheet: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
                 optionButton("Loved it", icon: "heart.fill", color: .pink, feedback: .playedLoved)
                 optionButton("Liked it", icon: "hand.thumbsup.fill", color: .blue, feedback: .playedLiked)
-                optionButton("Mixed", icon: "ellipsis", color: .orange, feedback: .playedMixed)
-                optionButton("Dropped", icon: "xmark", color: .gray, feedback: .playedDropped)
+                optionButton("Mixed", icon: "water.waves", color: .orange, feedback: .playedMixed)
+                optionButton("Dropped it", icon: "hand.thumbsdown.fill", color: .gray, feedback: .playedDropped)
             }
         }
         .padding(24)

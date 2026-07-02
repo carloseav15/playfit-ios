@@ -18,8 +18,8 @@ public struct DecisionsActivityView: View {
     public var body: some View {
         let history = buildTasteHistoryEntries(
             gameStates: viewModel.gameStates,
-            onboardingLikedIds: [],
-            onboardingDislikedIds: [],
+            onboardingLikedIds: viewModel.onboardingLikedGameIds,
+            onboardingDislikedIds: viewModel.onboardingDislikedGameIds,
             gamesCache: viewModel.gamesCache
         )
         
@@ -39,7 +39,7 @@ public struct DecisionsActivityView: View {
                 Picker("Activity Filters", selection: $activeTab) {
                     Text("All (\(history.count))").tag(ActivityTab.all)
                     Text("Picks (\(history.filter { $0.decision == "picks" }.count))").tag(ActivityTab.active)
-                    Text("Taste (\(history.filter { $0.decision != "picks" }.count))").tag(ActivityTab.taste)
+                    Text("Preferences (\(history.filter { $0.decision != "picks" }.count))").tag(ActivityTab.taste)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
@@ -69,6 +69,9 @@ public struct DecisionsActivityView: View {
                         }
                         .padding()
                     }
+                    .refreshable {
+                        await viewModel.syncIfOnline()
+                    }
                 }
             }
         }
@@ -92,7 +95,7 @@ public struct DecisionsActivityView: View {
                         signalToManage = nil
                     }
                     Button("Delete Signal", role: .destructive) {
-                        viewModel.deleteSignal(entry.gameId)
+                        viewModel.deleteSignal(entry.gameId, source: entry.source)
                         signalToManage = nil
                     }
                 }
@@ -154,60 +157,65 @@ struct ActivityRow: View {
     
     var body: some View {
         HStack(spacing: PlayfitSpacing.md) {
-            // Cover
-            if let game = game {
-                PlayfitCoverPlaceholder(title: game.title)
-                    .frame(width: 44, height: 60)
-                    .cornerRadius(8)
-            } else {
-                Color.primary.opacity(0.04)
-                    .frame(width: 44, height: 60)
-                    .cornerRadius(8)
-            }
-            
-            // Text info
-            VStack(alignment: .leading, spacing: 3) {
-                HStack {
-                    Text(badgeLabel(entry))
-                        .font(.system(size: 8, weight: .black))
-                        .foregroundColor(badgeColor(entry))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(badgeColor(entry).opacity(0.10), in: Capsule())
-                    
-                    if let rating = entry.rating, rating > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                                .font(.system(size: 7))
-                            Text(String(format: "%.0f", rating))
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.secondary)
-                        }
+            NavigationLink {
+                GameDetailView(gameId: entry.gameId)
+            } label: {
+                HStack(spacing: PlayfitSpacing.md) {
+                    if let game {
+                        PlayfitGameCover(game: game)
+                            .frame(width: 44, height: 60)
+                            .cornerRadius(8)
+                    } else {
+                        Color.primary.opacity(0.04)
+                            .frame(width: 44, height: 60)
+                            .cornerRadius(8)
                     }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack {
+                            Text(badgeLabel(entry))
+                                .font(.caption2.weight(.black))
+                                .foregroundColor(badgeColor(entry))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(badgeColor(entry).opacity(0.10), in: Capsule())
+
+                            if let rating = entry.rating, rating > 0 {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "star.fill")
+                                        .foregroundColor(.yellow)
+                                        .font(.caption2)
+                                    Text(String(format: "%.0f", rating))
+                                        .font(.caption2.bold())
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+
+                        Text(entry.title)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+
+                        Text(entry.updatedAt != nil ? formatDateString(entry.updatedAt!) : "Baseline")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
                 }
-                
-                Text(entry.title)
-                    .font(.subheadline.bold())
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                Text(entry.updatedAt != nil ? formatDateString(entry.updatedAt!) : "Baseline")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
             }
+            .buttonStyle(.plain)
             
-            Spacer()
-            
-            // Menu / Options
             Button(action: onManage) {
                 Image(systemName: "ellipsis")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .background(.ultraThinMaterial, in: Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Manage \(entry.title)")
         }
         .padding(12)
         .background(Color.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 16))
@@ -291,7 +299,7 @@ struct ChangeSignalSheet: View {
                 VStack(spacing: PlayfitSpacing.sm) {
                     optionRow(label: "Loved", sub: "Excellent gameplay and loop", icon: "heart.fill", color: .playfitPositive, val: "played_loved")
                     optionRow(label: "Liked", sub: "Solid experience worth playing", icon: "hand.thumbsup.fill", color: .playfitPositive, val: "played_liked")
-                    optionRow(label: "Mixed", sub: "Good elements but had issues", icon: "waveform", color: .yellow, val: "played_mixed")
+                    optionRow(label: "Mixed", sub: "Good elements but had issues", icon: "waveform", color: .playfitWarning, val: "played_mixed")
                     optionRow(label: "Dropped", sub: "Lost interest or didn't finish", icon: "hand.thumbsdown.fill", color: .playfitNegative, val: "played_dropped")
                     optionRow(label: "Not For Me", sub: "Avoid recommending similar games", icon: "xmark.octagon.fill", color: .playfitNegative, val: "not_for_me")
                 }

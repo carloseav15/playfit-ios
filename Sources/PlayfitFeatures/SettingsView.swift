@@ -88,7 +88,7 @@ public struct SettingsView: View {
                             Text("Data & Privacy")
                                 .font(.subheadline.weight(.bold))
                                 .foregroundColor(.primary)
-                            Text("Manage cache and profile preferences")
+                            Text("Manage your personal data, local taste storage, and account settings.")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -330,7 +330,7 @@ private struct AppearanceView: View {
             
             ScrollView {
                 VStack(alignment: .leading, spacing: PlayfitSpacing.md) {
-                    Text("Choose your preferred theme for the interface. Changes apply immediately to all screens.")
+                    Text("Choose your preferred theme for the interface.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
@@ -409,7 +409,7 @@ private struct AppearanceView: View {
 
 // MARK: - Platform Selection
 
-private struct PlatformSelectionView: View {
+struct PlatformSelectionView: View {
     @Environment(\.playViewModel) private var viewModel
     @State private var selectedFamily: String = "nintendo"
 
@@ -793,7 +793,7 @@ private struct PrivacySettingsView: View {
                             .font(.subheadline.weight(.bold))
                             .foregroundColor(.primary)
                         
-                        Text("Deletes all taste preferences, ratings, and library history. Your active account session stays, and you will restart calibration.")
+                        Text("Deletes all taste preferences, ratings, library history, and platform selection. Your active account session stays, and you will restart calibration.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineSpacing(2)
@@ -876,11 +876,11 @@ private struct PrivacySettingsView: View {
                     .padding(.vertical, 6)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Delete Cloud Account")
+                        Text("Delete Cloud Profile")
                             .font(.subheadline.weight(.bold))
                             .foregroundColor(.primary)
                         
-                        Text("Permanently deletes your account metadata, cloud-synchronized taste, and sign-in credentials from our servers. This action is irreversible.")
+                        Text("Permanently deletes your Playfit profile and synchronized taste data, clears local Playfit data, and signs you out. Your Supabase sign-in identity is not deleted.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineSpacing(2)
@@ -891,14 +891,12 @@ private struct PrivacySettingsView: View {
                                     actionPending = true
                                     Task {
                                         do {
-                                            try await viewModel.apiClient?.deleteProfile()
+                                            try await viewModel.deleteCloudProfile()
                                             await MainActor.run {
-                                                LocalStorageService.shared.deleteAllLocalData()
-                                                viewModel.resetAllLocalState()
                                                 authEmail = ""
                                                 actionPending = false
                                                 confirmDelete = false
-                                                viewModel.showToast("Account deletion completed", style: .success)
+                                                viewModel.showToast("Cloud profile deleted", style: .success)
                                             }
                                         } catch {
                                             await MainActor.run {
@@ -946,7 +944,7 @@ private struct PrivacySettingsView: View {
                                 Button {
                                     withAnimation { confirmDelete = true }
                                 } label: {
-                                    Text("Delete Account")
+                                    Text("Delete Cloud Profile")
                                         .font(.caption.bold())
                                         .foregroundColor(.primary)
                                         .padding(.horizontal, 16)
@@ -1028,7 +1026,7 @@ struct SignInSheetView: View {
                         // Logo & Header
                         VStack(spacing: PlayfitSpacing.xs) {
                             Text("PLAYFIT DECISIONS")
-                                .font(.system(size: 10, weight: .black, design: .monospaced))
+                                .font(.caption2.monospaced().weight(.black))
                                 .foregroundColor(.playfitAccent)
                                 .tracking(2.5)
                                 .padding(.top, 16)
@@ -1226,7 +1224,30 @@ struct SignInSheetView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(isLoading)
-                                
+
+                                Button {
+                                    guard !emailInput.isEmpty else {
+                                        viewModel.showToast("Enter your email address first.", style: .error)
+                                        return
+                                    }
+                                    Task {
+                                        do {
+                                            try await viewModel.resetPassword(email: emailInput)
+                                            viewModel.showToast("If that email is registered, you'll receive a reset link shortly.", style: .success)
+                                        } catch {
+                                            viewModel.showToast("Connection error. Please try again.", style: .error)
+                                        }
+                                    }
+                                } label: {
+                                    Text("Forgot password?")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .underline()
+                                        .padding(.top, 2)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isLoading)
+
                                 Button {
                                     withAnimation {
                                         authView = .signUp
@@ -1240,7 +1261,7 @@ struct SignInSheetView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
-                            
+
                         case .signUp:
                             VStack(spacing: PlayfitSpacing.md) {
                                 PlayfitGlassCard {
@@ -1425,5 +1446,3 @@ struct SignInSheetView: View {
         }
     }
 }
-
-

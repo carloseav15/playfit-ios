@@ -126,22 +126,41 @@ public struct UserProfile: Hashable, Sendable {
 extension UserProfile: Codable {
     enum CodingKeys: String, CodingKey {
         case summary
+        case likedGenres
+        case avoidedGenres
+        case likedTags
+        case dislikedTags
+        case ratedCount
+        case signals
+    }
+
+    private enum LegacyCodingKeys: String, CodingKey {
         case likedGenres = "liked_genres"
         case avoidedGenres = "avoided_genres"
         case likedTags = "liked_tags"
         case dislikedTags = "disliked_tags"
         case ratedCount = "rated_count"
-        case signals
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
         self.summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
-        self.likedGenres = try container.decodeIfPresent([String].self, forKey: .likedGenres) ?? []
-        self.avoidedGenres = try container.decodeIfPresent([String].self, forKey: .avoidedGenres) ?? []
-        self.likedTags = try container.decodeIfPresent([String: Int].self, forKey: .likedTags) ?? [:]
-        self.dislikedTags = try container.decodeIfPresent([String: Int].self, forKey: .dislikedTags) ?? [:]
-        self.ratedCount = try container.decodeIfPresent(Int.self, forKey: .ratedCount) ?? 0
+        self.likedGenres = try container.decodeIfPresent([String].self, forKey: .likedGenres)
+            ?? legacy.decodeIfPresent([String].self, forKey: .likedGenres)
+            ?? []
+        self.avoidedGenres = try container.decodeIfPresent([String].self, forKey: .avoidedGenres)
+            ?? legacy.decodeIfPresent([String].self, forKey: .avoidedGenres)
+            ?? []
+        self.likedTags = try container.decodeIfPresent([String: Int].self, forKey: .likedTags)
+            ?? legacy.decodeIfPresent([String: Int].self, forKey: .likedTags)
+            ?? [:]
+        self.dislikedTags = try container.decodeIfPresent([String: Int].self, forKey: .dislikedTags)
+            ?? legacy.decodeIfPresent([String: Int].self, forKey: .dislikedTags)
+            ?? [:]
+        self.ratedCount = try container.decodeIfPresent(Int.self, forKey: .ratedCount)
+            ?? legacy.decodeIfPresent(Int.self, forKey: .ratedCount)
+            ?? 0
         self.signals = try container.decodeIfPresent([ProfileSignal].self, forKey: .signals) ?? []
     }
 
@@ -233,7 +252,7 @@ public struct TasteHistoryEntry: Codable, Hashable, Sendable {
     }
 }
 
-public struct TasteMapTrait: Codable, Hashable, Sendable {
+public struct TasteMapTrait: Identifiable, Codable, Hashable, Sendable {
     public var id: String
     public var label: String
     public var kind: String

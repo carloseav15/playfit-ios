@@ -5,6 +5,7 @@ import SwiftUI
 
 public struct TasteMapVisualizerView: View {
     @Environment(\.playViewModel) private var viewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var activeNodeId: String?
     
     public init() {}
@@ -30,16 +31,12 @@ public struct TasteMapVisualizerView: View {
             
             VStack(spacing: PlayfitSpacing.md) {
                 // Header details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Interactive Affinity Map")
-                        .font(.headline.weight(.black))
-                    Text("Visual coordinates mapping your gaming footprint and active picks.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-                
+                Text("Visual graph of your gaming traits.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+
                 // SVG Cartesian Space Canvas
                 ZStack {
                     GeometryReader { geo in
@@ -68,29 +65,39 @@ public struct TasteMapVisualizerView: View {
                             // Quadrant Label overlay texts
                             VStack {
                                 HStack {
-                                    Text("Chill & Open World").font(.system(size: 8, weight: .bold))
+                                    Text("Chill & Open World").font(.caption2.bold())
                                     Spacer()
-                                    Text("Complex & Systems").font(.system(size: 8, weight: .bold))
+                                    Text("Complex & Systems").font(.caption2.bold())
                                 }
                                 Spacer()
                                 HStack {
-                                    Text("Cozy & Story-Rich").font(.system(size: 8, weight: .bold))
+                                    Text("Cozy & Story-Rich").font(.caption2.bold())
                                     Spacer()
-                                    Text("Demanding & Linear").font(.system(size: 8, weight: .bold))
+                                    Text("Demanding & Linear").font(.caption2.bold())
                                 }
                             }
                             .foregroundColor(.secondary.opacity(0.7))
                             .padding(24)
+                            .dynamicTypeSize(...DynamicTypeSize.large)
+                            .accessibilityHidden(true)
                             
                             // Axis Directions
-                            Text("Demanding →").font(.system(size: 7, weight: .bold))
+                            Text("Demanding →").font(.caption2.bold())
                                 .position(x: size - 45, y: center - 10)
-                            Text("← Cozy").font(.system(size: 7, weight: .bold))
+                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .accessibilityHidden(true)
+                            Text("← Cozy").font(.caption2.bold())
                                 .position(x: 40, y: center - 10)
-                            Text("Systems ↑").font(.system(size: 7, weight: .bold))
+                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .accessibilityHidden(true)
+                            Text("Systems ↑").font(.caption2.bold())
                                 .position(x: center - 35, y: 35)
-                            Text("Story ↓").font(.system(size: 7, weight: .bold))
+                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .accessibilityHidden(true)
+                            Text("Story ↓").font(.caption2.bold())
                                 .position(x: center - 25, y: size - 35)
+                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .accessibilityHidden(true)
                             
                             // Plot Nodes
                             ForEach(nodes) { node in
@@ -98,30 +105,27 @@ public struct TasteMapVisualizerView: View {
                                 let cy = center - (node.y / 100.0) * scale // Cartesian invert
                                 let isSelected = activeNode?.id == node.id
                                 
-                                ZStack {
-                                    // Touch target expanding ring
-                                    Circle()
-                                        .fill(Color.clear)
-                                        .frame(width: 36, height: 36)
-                                    
-                                    // Outer glow ring
-                                    Circle()
-                                        .fill(nodeColor(node.type).opacity(isSelected ? 0.35 : 0.15))
-                                        .frame(width: isSelected ? 24 : 16)
-                                        .animation(.spring(response: 0.3), value: isSelected)
-                                    
-                                    // Core dot
-                                    Circle()
-                                        .fill(nodeColor(node.type))
-                                        .frame(width: isSelected ? 10 : 8)
-                                        .overlay(Circle().stroke(Color.white, lineWidth: 1.2))
-                                }
-                                .position(x: cx, y: cy)
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.3)) {
+                                Button {
+                                    withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
                                         activeNodeId = node.id
                                     }
+                                } label: {
+                                    ZStack {
+                                        Circle().fill(Color.clear).frame(width: 44, height: 44)
+                                        Circle()
+                                            .fill(nodeColor(node.type).opacity(isSelected ? 0.35 : 0.15))
+                                            .frame(width: isSelected ? 24 : 16)
+                                            .animation(reduceMotion ? nil : .spring(response: 0.3), value: isSelected)
+                                        Circle()
+                                            .fill(nodeColor(node.type))
+                                            .frame(width: isSelected ? 10 : 8)
+                                            .overlay(Circle().stroke(Color.white, lineWidth: 1.2))
+                                    }
                                 }
+                                .buttonStyle(.plain)
+                                .position(x: cx, y: cy)
+                                .accessibilityLabel("\(node.game.title), \(nodeTypeLabel(node.type))")
+                                .accessibilityHint("Shows this game below the map")
                             }
                         }
                         .frame(width: size, height: size)
@@ -153,13 +157,17 @@ public struct TasteMapVisualizerView: View {
                         }
                     }
                     .padding()
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
                 } else {
                     Spacer()
                 }
             }
             .padding(.vertical)
         }
+        .navigationTitle("Interactive Affinity Map")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
     
     private static let terminalStatuses: Set<PlayStatus> = [.beaten, .completed, .abandoned, .dropped]
@@ -196,6 +204,14 @@ public struct TasteMapVisualizerView: View {
         case .pending: Color.secondary.opacity(0.8)
         }
     }
+
+    private func nodeTypeLabel(_ type: GameNode.NodeType) -> String {
+        switch type {
+        case .liked: "liked"
+        case .avoided: "avoided"
+        case .pending: "saved pick"
+        }
+    }
     
     private func carouselCard(_ node: GameNode, totalCount: Int, currentIndex: Int, onPrev: @escaping () -> Void, onNext: @escaping () -> Void) -> some View {
         PlayfitGlassCard {
@@ -205,20 +221,24 @@ public struct TasteMapVisualizerView: View {
                     Image(systemName: "chevron.left")
                         .font(.subheadline.bold())
                         .foregroundColor(.primary)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                         .background(.ultraThinMaterial, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Previous game")
+
+                PlayfitGameCover(game: node.game)
+                    .frame(width: 52)
                 
                 // Center info block
                 VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
                     HStack {
                         Text(node.game.primaryGenre.capitalized)
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.caption2.bold())
                             .foregroundColor(.playfitAccent)
                         Spacer()
                         Text(node.type == .liked ? "Liked" : (node.type == .avoided ? "Avoided" : "Saved"))
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.caption2.bold())
                             .foregroundColor(nodeColor(node.type))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -232,8 +252,8 @@ public struct TasteMapVisualizerView: View {
                     
                     HStack(spacing: 4) {
                         ForEach(node.game.tags.prefix(2), id: \.self) { tag in
-                            Text(tag.replacingOccurrences(of: "_", with: " "))
-                                .font(.system(size: 7, weight: .semibold, design: .monospaced))
+                            Text(formatTagLabel(tag))
+                                .font(.caption2.monospaced().weight(.semibold))
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 2)
@@ -249,10 +269,11 @@ public struct TasteMapVisualizerView: View {
                     Image(systemName: "chevron.right")
                         .font(.subheadline.bold())
                         .foregroundColor(.primary)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                         .background(.ultraThinMaterial, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Next game")
             }
             .padding(12)
         }
@@ -297,7 +318,7 @@ public struct TasteMapVisualizerView: View {
         // Deterministic jitter based on game.id
         var hash = 0
         for char in game.id.utf8 {
-            hash = Int(char) + ((hash << 5) - hash)
+            hash = Int(char) &+ ((hash &<< 5) &- hash)
         }
         let jitterX = Double((hash % 16) - 8)
         let jitterY = Double(((hash >> 4) % 16) - 8)

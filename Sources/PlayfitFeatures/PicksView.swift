@@ -28,10 +28,7 @@ public struct PicksView: View {
                     ForEach(picks) { entry in
                         PickRowView(
                             entry: entry,
-                            manageAction: { manageEntry = entry },
-                            manageEntry: $manageEntry,
-                            showAlreadyPlayed: $showAlreadyPlayed,
-                            viewModel: viewModel
+                            manageAction: { manageEntry = entry }
                         )
                         .listRowBackground(Color.clear)
                         .swipeActions(edge: .trailing) {
@@ -41,48 +38,43 @@ public struct PicksView: View {
                                 Label("Remove", systemImage: "trash")
                             }
                         }
-                        .confirmationDialog(
-                            "Manage Pick",
-                            isPresented: Binding(
-                                get: { manageEntry?.game.id == entry.game.id },
-                                set: { if !$0 { manageEntry = nil } }
-                            ),
-                            titleVisibility: .visible
-                        ) {
-                            Button("Already Played It") {
-                                showAlreadyPlayed = true
-                            }
-                            Button("No, skip this", role: .destructive) {
-                                if let entry = manageEntry {
-                                    viewModel.notForMe(entry)
-                                }
-                                manageEntry = nil
-                            }
-                            Button("Remove Pick", role: .destructive) {
-                                if let entry = manageEntry {
-                                    viewModel.removePick(entry.game.id)
-                                }
-                                manageEntry = nil
-                            }
-                            Button("Cancel", role: .cancel) {
-                                manageEntry = nil
-                            }
-                        }
-                        .sheet(isPresented: $showAlreadyPlayed) {
-                            if let entry = manageEntry {
-                                AlreadyPlayedSheet { feedback in
-                                    viewModel.alreadyPlayed(entry, feedback: feedback)
-                                    showAlreadyPlayed = false
-                                    manageEntry = nil
-                                }
-                            }
-                        }
                     }
                 }
             }
             .scrollContentBackground(.hidden)
+            .refreshable {
+                await viewModel.syncIfOnline()
+            }
         }
         .navigationTitle("Saved Picks")
+        .confirmationDialog(
+            "Manage Pick",
+            isPresented: Binding(
+                get: { manageEntry != nil && !showAlreadyPlayed },
+                set: { if !$0 && !showAlreadyPlayed { manageEntry = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Already Played It") { showAlreadyPlayed = true }
+            Button("No, skip this", role: .destructive) {
+                if let entry = manageEntry { viewModel.notForMe(entry) }
+                manageEntry = nil
+            }
+            Button("Remove Pick", role: .destructive) {
+                if let entry = manageEntry { viewModel.removePick(entry.game.id) }
+                manageEntry = nil
+            }
+            Button("Cancel", role: .cancel) { manageEntry = nil }
+        }
+        .sheet(isPresented: $showAlreadyPlayed) {
+            if let entry = manageEntry {
+                AlreadyPlayedSheet { feedback in
+                    viewModel.alreadyPlayed(entry, feedback: feedback)
+                    showAlreadyPlayed = false
+                    manageEntry = nil
+                }
+            }
+        }
     }
 
     private var glowBackground: some View {
@@ -110,23 +102,19 @@ public struct PicksView: View {
 private struct PickRowView: View {
     let entry: RankedRecommendation
     let manageAction: () -> Void
-    @Binding var manageEntry: RankedRecommendation?
-    @Binding var showAlreadyPlayed: Bool
-    let viewModel: PlayViewModel
 
     var body: some View {
         HStack {
             NavigationLink {
                 GameDetailView(entry: entry)
             } label: {
-                HStack {
+                HStack(spacing: PlayfitSpacing.md) {
+                    PlayfitGameCover(game: entry.game)
+                        .frame(width: 56)
+
                     VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
                         Text(entry.game.title)
                             .font(.headline)
-
-                        Text(entry.game.tags.prefix(3).joined(separator: " / "))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -142,52 +130,10 @@ private struct PickRowView: View {
                 Image(systemName: "ellipsis")
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .padding(.leading, 4)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                viewModel.removePick(entry.game.id)
-            } label: {
-                Label("Remove", systemImage: "trash")
-            }
-        }
-        .confirmationDialog(
-            "Manage Pick",
-            isPresented: Binding(
-                get: { manageEntry?.game.id == entry.game.id },
-                set: { if !$0 { manageEntry = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button("Already Played It") {
-                showAlreadyPlayed = true
-            }
-            Button("No, skip this", role: .destructive) {
-                if let entry = manageEntry {
-                    viewModel.notForMe(entry)
-                }
-                manageEntry = nil
-            }
-            Button("Remove Pick", role: .destructive) {
-                if let entry = manageEntry {
-                    viewModel.removePick(entry.game.id)
-                }
-                manageEntry = nil
-            }
-            Button("Cancel", role: .cancel) {
-                manageEntry = nil
-            }
-        }
-        .sheet(isPresented: $showAlreadyPlayed) {
-            if let entry = manageEntry {
-                AlreadyPlayedSheet { feedback in
-                    viewModel.alreadyPlayed(entry, feedback: feedback)
-                    showAlreadyPlayed = false
-                    manageEntry = nil
-                }
-            }
+            .accessibilityLabel("Manage \(entry.game.title)")
         }
     }
 }

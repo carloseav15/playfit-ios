@@ -1,5 +1,11 @@
+import Foundation
 import PlayfitModels
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 public enum PlayfitSpacing {
     public static let xs: CGFloat = 6
@@ -10,6 +16,7 @@ public enum PlayfitSpacing {
 }
 
 public struct PlayfitGlassCard<Content: View>: View {
+    @Environment(\.colorSchemeContrast) private var contrast
     private let content: Content
 
     public init(@ViewBuilder content: () -> Content) {
@@ -22,53 +29,114 @@ public struct PlayfitGlassCard<Content: View>: View {
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(.white.opacity(0.18), lineWidth: 1)
+                    .stroke(.primary.opacity(contrast == .increased ? 0.28 : 0.12), lineWidth: 1)
             }
     }
 }
 
-public struct PlayfitCoverPlaceholder: View {
-    private let title: String
+private actor CoverImageLoader {
+    static let shared = CoverImageLoader()
+    private let memoryCache = NSCache<NSURL, NSData>()
 
-    public init(title: String) {
-        self.title = title
+    private init() {
+        memoryCache.totalCostLimit = 64 * 1_024 * 1_024
+    }
+
+    func data(for url: URL) async throws -> Data {
+        if let cached = memoryCache.object(forKey: url as NSURL) {
+            return cached as Data
+        }
+
+        var request = URLRequest(url: url)
+        request.cachePolicy = .returnCacheDataElseLoad
+        request.timeoutInterval = 20
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let response = response as? HTTPURLResponse,
+              (200...299).contains(response.statusCode),
+              !data.isEmpty else {
+            throw URLError(.badServerResponse)
+        }
+        memoryCache.setObject(data as NSData, forKey: url as NSURL, cost: data.count)
+        return data
+    }
+}
+
+public struct PlayfitGameCover: View {
+    private let game: Game
+    private let baseURL: URL
+    @State private var image: Image?
+    @State private var didFail = false
+
+    public init(
+        game: Game,
+        baseURL: URL = URL(string: "https://playfit-gold.vercel.app")!
+    ) {
+        self.game = game
+        self.baseURL = baseURL
     }
 
     public var body: some View {
-        let filename = title.lowercased()
-            .replacingOccurrences(of: " ", with: "_")
-            .replacingOccurrences(of: ":", with: "")
-            .replacingOccurrences(of: "'", with: "")
-            .replacingOccurrences(of: "’", with: "")
-            .replacingOccurrences(of: "•", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let url = URL(string: "https://playfit-gold.vercel.app/covers/games/\(filename).jpg")
-
-        AsyncImage(url: url) { phase in
-            switch phase {
-            case .success(let image):
+        ZStack {
+            if let image {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-            default:
-                ZStack(alignment: .bottomLeading) {
-                    LinearGradient(
-                        colors: [.indigo, .purple, .black],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-
-                    Text(title)
-                        .font(.caption.bold())
-                        .foregroundStyle(.white)
-                        .lineLimit(3)
-                        .padding(8)
-                }
+            } else if didFail || game.resolvedCoverURL(baseURL: baseURL) == nil {
+                coverFallback
+            } else {
+                Rectangle().fill(.quaternary)
+                ProgressView().tint(.secondary)
             }
         }
         .aspectRatio(0.72, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Cover art for \(game.title)")
+        .task(id: game.resolvedCoverURL(baseURL: baseURL)) {
+            await loadImage()
+        }
+    }
+
+    private var coverFallback: some View {
+        ZStack(alignment: .bottomLeading) {
+            LinearGradient(
+                colors: [.indigo, .purple, .black],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "gamecontroller.fill")
+                .font(.largeTitle)
+                .foregroundStyle(.white.opacity(0.72))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text(game.title)
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .lineLimit(3)
+                .padding(8)
+        }
+    }
+
+    @MainActor
+    private func loadImage() async {
+        image = nil
+        didFail = false
+        guard let url = game.resolvedCoverURL(baseURL: baseURL) else {
+            didFail = true
+            return
+        }
+        do {
+            let data = try await CoverImageLoader.shared.data(for: url)
+            #if canImport(UIKit)
+            guard let platformImage = UIImage(data: data) else { throw URLError(.cannotDecodeContentData) }
+            image = Image(uiImage: platformImage)
+            #elseif canImport(AppKit)
+            guard let platformImage = NSImage(data: data) else { throw URLError(.cannotDecodeContentData) }
+            image = Image(nsImage: platformImage)
+            #endif
+        } catch {
+            didFail = true
+        }
     }
 }
 

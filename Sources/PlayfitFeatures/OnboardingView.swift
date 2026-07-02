@@ -105,6 +105,7 @@ public struct OnboardingView: View {
                         .background(.ultraThinMaterial, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel setup")
             }
         }
         .padding(.horizontal, PlayfitSpacing.md)
@@ -179,7 +180,7 @@ public struct OnboardingView: View {
                 Text("Where do you play?")
                     .font(.largeTitle.weight(.black))
 
-                Text("Select the systems you own so Playfit only suggests games you can actually play.")
+                Text("We will only recommend games available on your active platforms.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -337,7 +338,7 @@ public struct OnboardingView: View {
                 let game = likedGames[index]
                 PlayfitGlassCard {
                     HStack(spacing: PlayfitSpacing.md) {
-                        PlayfitCoverPlaceholder(title: game.title)
+                        PlayfitGameCover(game: game)
                             .frame(width: 64)
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -358,6 +359,7 @@ public struct OnboardingView: View {
                                 .foregroundStyle(.secondary)
                                 .font(.title3)
                         }
+                        .accessibilityLabel("Remove \(game.title)")
                         .buttonStyle(.plain)
                     }
                 }
@@ -382,7 +384,7 @@ public struct OnboardingView: View {
     private var dislikedGameStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PlayfitSpacing.lg) {
-                Text("Pick one game that missed")
+                Text("Pick one game that wasn't for you")
                     .font(.largeTitle.weight(.black))
 
                 Text("Tell us a popular game you didn't enjoy so we know what to avoid.")
@@ -392,7 +394,7 @@ public struct OnboardingView: View {
                 if let game = dislikedGame {
                     PlayfitGlassCard {
                         HStack(spacing: PlayfitSpacing.md) {
-                            PlayfitCoverPlaceholder(title: game.title)
+                            PlayfitGameCover(game: game)
                                 .frame(width: 64)
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -414,6 +416,7 @@ public struct OnboardingView: View {
                                     .font(.title3)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Remove \(game.title)")
                         }
                     }
                 } else {
@@ -538,15 +541,13 @@ public struct OnboardingView: View {
 
     private var quickSuggestions: some View {
         VStack(alignment: .leading, spacing: PlayfitSpacing.sm) {
-            Text("Quick suggestions")
+            Text("Quick Suggestions")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             ForEach(suggestions, id: \.self) { title in
                 Button {
-                    // Create basic game mock for suggestion
-                    let mock = Game(id: title.lowercased().replacingOccurrences(of: " ", with: "_"), title: title, genres: ["Action"])
-                    selectGame(mock)
+                    searchQuery = title
                 } label: {
                     HStack {
                         Text(title)
@@ -571,7 +572,7 @@ public struct OnboardingView: View {
                         selectGame(game)
                     } label: {
                         HStack(spacing: PlayfitSpacing.sm) {
-                            PlayfitCoverPlaceholder(title: game.title)
+                            PlayfitGameCover(game: game)
                                 .frame(width: 44)
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -685,38 +686,37 @@ public struct OnboardingView: View {
     }
 
     private func completeOnboarding() {
-        let profile = UserProfile(
-            summary: "Your taste profile is ready.",
-            likedGenres: Array(Set(likedGames.flatMap(\.genres))),
-            avoidedGenres: dislikedGame?.genres ?? [],
-            likedTags: likedGames.reduce(into: [String: Int]()) { dict, game in
-                for tag in game.tags {
-                    dict[tag, default: 0] += 1
-                }
-            },
-            dislikedTags: dislikedGame?.tags.reduce(into: [String: Int]()) { dict, tag in
-                dict[tag] = 1
-            } ?? [:],
-            ratedCount: likedGames.count + (dislikedGame != nil ? 1 : 0),
-            signals: []
-        )
-        viewModel.profile = profile
-        viewModel.selectedPlatformIds = selectedPlatformIds
-        viewModel.onboardingCompleted = true
-
-        // Store onboarding IDs for server sync
         let completedAt = ISO8601DateFormatter().string(from: Date())
         viewModel.onboardingLikedGameIds = likedGames.map(\.id)
         viewModel.onboardingDislikedGameIds = dislikedGame.map { [$0.id] } ?? []
         viewModel.onboardingCompletedAt = completedAt
 
-        // Also build initial gameStates from onboarding choices
         for game in likedGames {
-            viewModel.gameStates[game.id] = UserGameState(rating: 5.0, source: "onboarding")
+            viewModel.gamesCache[game.id] = game
+            viewModel.gameStates[game.id] = UserGameState(
+                source: "onboarding",
+                createdAt: completedAt,
+                updatedAt: completedAt
+            )
         }
         if let miss = dislikedGame {
-            viewModel.gameStates[miss.id] = UserGameState(excluded: true, source: "onboarding")
+            viewModel.gamesCache[miss.id] = miss
+            viewModel.gameStates[miss.id] = UserGameState(
+                source: "onboarding",
+                createdAt: completedAt,
+                updatedAt: completedAt
+            )
         }
+
+        let profile = rebuildUserProfile(
+            onboardingLikedIds: viewModel.onboardingLikedGameIds,
+            onboardingDislikedIds: viewModel.onboardingDislikedGameIds,
+            gameStates: viewModel.gameStates,
+            gamesCache: viewModel.gamesCache
+        )
+        viewModel.profile = profile
+        viewModel.selectedPlatformIds = selectedPlatformIds
+        viewModel.onboardingCompleted = true
 
         let storage = LocalStorageService.shared
         storage.saveProfile(profile, platformIds: selectedPlatformIds, onboardingCompleted: true)

@@ -5,9 +5,18 @@ import PlayfitModels
 import PlayfitStorage
 import SwiftUI
 
+public enum PlayfitSyncState: Equatable, Sendable {
+    case idle
+    case syncing
+    case synced
+    case failed
+    case offline
+}
+
 @Observable
 public final class PlayViewModel: @unchecked Sendable {
     public var pool: [RankedRecommendation]
+    public var pickRecommendations: [RankedRecommendation]
     public var stablePrimaryId: String?
     public var excludedIds: Set<String>
     public var gameStates: [String: UserGameState]
@@ -15,6 +24,8 @@ public final class PlayViewModel: @unchecked Sendable {
     public private(set) var pickIds: Set<String>
     public private(set) var isLoading: Bool
     public private(set) var error: String?
+    public private(set) var syncState: PlayfitSyncState
+    public private(set) var lastSyncedAt: Date?
     public var toastMessage: String?
     public var toastStyle: ToastStyle = .success
     public var onboardingStarted: Bool
@@ -58,11 +69,14 @@ public final class PlayViewModel: @unchecked Sendable {
         apiClient: PlayfitAPIClient? = nil
     ) {
         self.pool = recommendations
+        self.pickRecommendations = recommendations.filter(\.inPlayfitPicks)
         self.excludedIds = []
         self.gameStates = [:]
         self.profile = profile
         self.pickIds = Set(recommendations.filter(\.inPlayfitPicks).map(\.game.id))
         self.isLoading = false
+        self.syncState = apiClient == nil ? .offline : .idle
+        self.lastSyncedAt = nil
         self.onboardingStarted = false
         self.onboardingCompleted = false
         self.selectedPlatformIds = []
@@ -108,9 +122,10 @@ public final class PlayViewModel: @unchecked Sendable {
         gameStates = storage.loadGameStates()
         let cached = storage.loadCachedRecommendations()
         if !cached.isEmpty {
-            pool = cached
-            pickIds = Set(cached.filter(\.inPlayfitPicks).map(\.game.id))
-            stablePrimaryId = cached.first?.game.id
+            pickIds = activePickIds(in: gameStates)
+            pickRecommendations = cached.filter { pickIds.contains($0.game.id) }
+            pool = cached.filter { !pickIds.contains($0.game.id) }
+            stablePrimaryId = pool.first?.game.id
         } else if onboardingCompleted {
             isLoading = true
             error = "No cached recommendations available. Connect to sync."
@@ -119,10 +134,20 @@ public final class PlayViewModel: @unchecked Sendable {
 
     @MainActor
     public func syncIfOnline() async {
-        guard let apiClient else { return }
+        guard let apiClient else {
+            syncState = .offline
+            return
+        }
         isLoading = true
+        syncState = .syncing
         error = nil
         do {
+            // Upload anything still pending (ratings, picks, etc.) before asking the
+            // server for fresh recommendations — otherwise the server can hand back a
+            // candidate the user just rated or picked locally, because it hasn't seen
+            // that change yet.
+            await drainPendingActions()
+
             let playNextResult: PlayNextModel
             do {
                 playNextResult = try await apiClient.fetchPlayNext()
@@ -132,33 +157,42 @@ public final class PlayViewModel: @unchecked Sendable {
                 playNextResult = try await apiClient.fetchPlayNext()
             }
 
-            await drainPendingActions()
-
             async let profileData = apiClient.fetchProfile()
             async let gameStatesData = apiClient.fetchGameStates()
-            async let platformsData = apiClient.fetchPlatforms()
+            async let picksData = apiClient.fetchPicks()
 
-            let (profileResult, gameStatesResult, platformsResult) = try await (profileData, gameStatesData, platformsData)
+            let (profileResult, gameStatesResult, picksResult) = try await (
+                profileData,
+                gameStatesData,
+                picksData
+            )
+
+            // Platforms are treated as best-effort, matching `load()`: a stale local
+            // list shouldn't fail the whole sync when this endpoint has a problem.
+            if let platformsResult = try? await apiClient.fetchPlatforms(), !platformsResult.isEmpty {
+                self.platforms = platformsResult
+            }
 
             self.pool = ([playNextResult.primary].compactMap { $0 } + playNextResult.alternatives)
             self.gameStates = overlayStillPending(on: gameStatesResult)
+            self.pickRecommendations = picksResult
             if let profile = profileResult {
                 self.profile = profile
             }
-            if !platformsResult.isEmpty {
-                self.platforms = platformsResult
-            }
-            self.pickIds = Set(playNextResult.savedPickIds)
+            self.pickIds = activePickIds(in: self.gameStates)
             self.stablePrimaryId = playNextResult.primary?.game.id
             self.excludedIds = []
 
-            storage.cacheRecommendations(self.pool)
+            storage.cacheRecommendations(uniqueRecommendations(self.pool + self.pickRecommendations))
             storage.saveProfile(self.profile, platformIds: self.selectedPlatformIds, onboardingCompleted: self.onboardingCompleted)
             for (gameId, state) in self.gameStates {
                 storage.saveGameState(gameId: gameId, state: state)
             }
+            self.lastSyncedAt = Date()
+            self.syncState = .synced
         } catch {
             self.error = error.localizedDescription
+            self.syncState = .failed
         }
         isLoading = false
     }
@@ -197,21 +231,31 @@ public final class PlayViewModel: @unchecked Sendable {
     }
 
     public func refresh() async {
-        guard let apiClient else { return }
+        guard let apiClient else {
+            syncState = .offline
+            return
+        }
         isLoading = true
+        syncState = .syncing
         error = nil
         do {
-            let playNext = try await apiClient.fetchPlayNext()
+            async let playNextData = apiClient.fetchPlayNext()
+            async let picksData = apiClient.fetchPicks()
+            let (playNext, picksResult) = try await (playNextData, picksData)
             let existingIds = Set(pool.map(\.game.id))
             let fresh = ([playNext.primary].compactMap { $0 } + playNext.alternatives)
                 .filter { !excludedIds.contains($0.game.id) || !existingIds.contains($0.game.id) }
             self.pool = fresh
-            self.pickIds = Set(playNext.savedPickIds)
+            self.pickRecommendations = picksResult
+            self.pickIds = activePickIds(in: gameStates)
             self.stablePrimaryId = playNext.primary?.game.id
 
-            storage.cacheRecommendations(fresh)
+            storage.cacheRecommendations(uniqueRecommendations(fresh + picksResult))
+            self.lastSyncedAt = Date()
+            self.syncState = .synced
         } catch {
             self.error = error.localizedDescription
+            self.syncState = .failed
         }
         isLoading = false
     }
@@ -236,7 +280,9 @@ public final class PlayViewModel: @unchecked Sendable {
     }
 
     public var picks: [RankedRecommendation] {
-        visiblePool.filter { pickIds.contains($0.game.id) }
+        uniqueRecommendations(pickRecommendations + pool)
+            .filter { pickIds.contains($0.game.id) }
+            .sorted { $0.affinityScore > $1.affinityScore }
     }
 
     public func isPicked(_ gameId: String) -> Bool {
@@ -263,25 +309,48 @@ public final class PlayViewModel: @unchecked Sendable {
     }
 
     public func addPick(_ entry: RankedRecommendation) {
+        guard pickIds.count < 100 else {
+            showToast("Picks is limited to 100 games", style: .error)
+            return
+        }
+        let state = gameStates[entry.game.id]
+        guard state?.excluded != true,
+              state?.status.map({ !isTerminal($0) }) ?? true else {
+            showToast("Finished or excluded games cannot be added to Picks", style: .error)
+            return
+        }
         advancePast(entry.game.id)
         pickIds.insert(entry.game.id)
-        applyDecisionFeedback(gameStates: &gameStates, gameId: entry.game.id, feedback: .liked)
+        gamesCache[entry.game.id] = entry.game
+        setPlayfitPick(gameStates: &gameStates, gameId: entry.game.id, picked: true)
+        var savedEntry = entry
+        savedEntry.inPlayfitPicks = true
+        pickRecommendations.removeAll { $0.game.id == entry.game.id }
+        pickRecommendations.insert(savedEntry, at: 0)
         persistGameState(gameId: entry.game.id)
+        storage.cacheRecommendations(uniqueRecommendations(pool + pickRecommendations))
         showToast("Saved to Picks")
     }
 
     public func notForMe(_ entry: RankedRecommendation) {
         advancePast(entry.game.id)
+        gamesCache[entry.game.id] = entry.game
+        pickIds.remove(entry.game.id)
+        pickRecommendations.removeAll { $0.game.id == entry.game.id }
         applyDecisionFeedback(gameStates: &gameStates, gameId: entry.game.id, feedback: .notForMe)
         persistGameState(gameId: entry.game.id)
+        rebuildProfileFromCurrentSignals()
         showToast("Skipped")
     }
 
     public func alreadyPlayed(_ entry: RankedRecommendation, feedback: AlreadyPlayedFeedback) {
         advancePast(entry.game.id)
+        gamesCache[entry.game.id] = entry.game
         pickIds.remove(entry.game.id)
+        pickRecommendations.removeAll { $0.game.id == entry.game.id }
         applyDecisionFeedback(gameStates: &gameStates, gameId: entry.game.id, feedback: feedback)
         persistGameState(gameId: entry.game.id)
+        rebuildProfileFromCurrentSignals()
         showToast("Marked as played")
     }
 
@@ -295,9 +364,15 @@ public final class PlayViewModel: @unchecked Sendable {
         showToast("Skipped games shown again")
     }
 
+    public func clearError() {
+        error = nil
+        if syncState == .failed { syncState = .idle }
+    }
+
     @MainActor
     public func resetAllLocalState() {
         pool = []
+        pickRecommendations = []
         gameStates = [:]
         pickIds = []
         excludedIds = []
@@ -310,47 +385,72 @@ public final class PlayViewModel: @unchecked Sendable {
         onboardingCompletedAt = nil
         profile = UserProfile()
         error = nil
+        syncState = apiClient == nil ? .offline : .idle
+        lastSyncedAt = nil
         authSession = nil
         AuthSessionStore.clear()
     }
 
     public func removePick(_ gameId: String) {
         pickIds.remove(gameId)
-        gameStates[gameId]?.inPlayfitPicks = false
+        pickRecommendations.removeAll { $0.game.id == gameId }
+        setPlayfitPick(gameStates: &gameStates, gameId: gameId, picked: false)
         persistGameState(gameId: gameId)
+        storage.cacheRecommendations(uniqueRecommendations(pool + pickRecommendations))
         showToast("Removed from Picks")
     }
 
-    public func deleteSignal(_ gameId: String) {
-        gameStates.removeValue(forKey: gameId)
-        storage.deleteGameState(gameId: gameId)
-        deleteGameStateOrQueue(gameId: gameId)
+    public func deleteSignal(_ gameId: String, source: String) {
+        if source == "onboarding_liked" {
+            onboardingLikedGameIds.removeAll { $0 == gameId }
+        } else if source == "onboarding_disliked" {
+            onboardingDislikedGameIds.removeAll { $0 == gameId }
+        } else if var state = gameStates[gameId] {
+            state.rating = nil
+            state.excluded = false
+            if let status = state.status, isTerminal(status) {
+                state.status = nil
+            }
+            if state.inPlayfitPicks || state.inBacklog || state.inWishlist {
+                gameStates[gameId] = state
+                persistGameState(gameId: gameId)
+            } else {
+                gameStates.removeValue(forKey: gameId)
+                storage.deleteGameState(gameId: gameId)
+                deleteGameStateOrQueue(gameId: gameId)
+            }
+        }
+        if source != "rating",
+           let state = gameStates[gameId],
+           state.source == "onboarding",
+           state.rating == nil,
+           state.status == nil,
+           !state.inPlayfitPicks,
+           !state.inBacklog,
+           !state.inWishlist,
+           !state.excluded {
+            gameStates.removeValue(forKey: gameId)
+            storage.deleteGameState(gameId: gameId)
+            deleteGameStateOrQueue(gameId: gameId)
+        }
+        storage.saveOnboardingMetadata(
+            likedIds: onboardingLikedGameIds,
+            dislikedIds: onboardingDislikedGameIds,
+            completedAt: onboardingCompletedAt
+        )
+        rebuildProfileFromCurrentSignals()
         showToast("Signal deleted")
     }
 
     public func updateSignal(gameId: String, feedback: String) {
-        var state = gameStates[gameId] ?? UserGameState()
-        switch feedback {
-        case "played_loved":
-            state.rating = 5.0
-            state.excluded = false
-        case "played_liked":
-            state.rating = 4.0
-            state.excluded = false
-        case "played_mixed":
-            state.rating = 3.0
-            state.excluded = false
-        case "played_dropped":
-            state.rating = 2.0
-            state.excluded = false
-        case "not_for_me":
-            state.rating = nil
-            state.excluded = true
-        default:
-            break
+        guard let decision = DecisionFeedback(rawValue: feedback) else { return }
+        applyDecisionFeedback(gameStates: &gameStates, gameId: gameId, feedback: decision)
+        if gameStates[gameId]?.inPlayfitPicks != true {
+            pickIds.remove(gameId)
+            pickRecommendations.removeAll { $0.game.id == gameId }
         }
-        gameStates[gameId] = state
         persistGameState(gameId: gameId)
+        rebuildProfileFromCurrentSignals()
         showToast("Signal updated")
     }
 
@@ -389,6 +489,12 @@ public final class PlayViewModel: @unchecked Sendable {
     }
 
     @MainActor
+    public func resetPassword(email: String) async throws {
+        let client = SupabaseAuthClient()
+        try await client.resetPasswordForEmail(email)
+    }
+
+    @MainActor
     public func signInWithGoogle() async throws {
         let client = SupabaseAuthClient()
         let newSession = try await client.signInWithGoogle()
@@ -424,9 +530,21 @@ public final class PlayViewModel: @unchecked Sendable {
     }
 
     @MainActor
+    public func deleteCloudProfile() async throws {
+        guard let apiClient else { throw APIError.unexpectedResponse }
+        try await apiClient.deleteProfile()
+        if let token = authSession?.accessToken {
+            await SupabaseAuthClient().signOut(accessToken: token)
+        }
+        storage.deleteAllLocalData()
+        resetAllLocalState()
+    }
+
+    @MainActor
     public func forceSyncCloud() async {
         guard let apiClient else { return }
         isLoading = true
+        syncState = .syncing
         error = nil
         do {
             try await apiClient.saveProfile(profile: self.profile, gameStates: self.gameStates, onboarding: buildOnboardingPayload())
@@ -434,6 +552,7 @@ public final class PlayViewModel: @unchecked Sendable {
             showToast("Cloud sync completed", style: .success)
         } catch {
             self.error = error.localizedDescription
+            self.syncState = .failed
             showToast("Sync failed: \(error.localizedDescription)", style: .error)
         }
         isLoading = false
@@ -519,16 +638,28 @@ public final class PlayViewModel: @unchecked Sendable {
     @MainActor
     public func hydrateTasteGames() async {
         // Hydrate from pool recommendations
-        for rec in pool {
+        for rec in pool + pickRecommendations {
             gamesCache[rec.game.id] = rec.game
         }
         
         let statesIds = gameStates.keys
         let signalIds = profile.signals.map { $0.id }
-        let allNeededIds = Array(Set(statesIds).union(signalIds))
+        let allNeededIds = Array(
+            Set(statesIds)
+                .union(signalIds)
+                .union(onboardingLikedGameIds)
+                .union(onboardingDislikedGameIds)
+        )
         
         let missingIds = allNeededIds.filter { gamesCache[$0] == nil }
-        guard !missingIds.isEmpty, let apiClient else { return }
+        guard !missingIds.isEmpty else {
+            rebuildProfileFromCurrentSignals()
+            return
+        }
+        guard let apiClient else {
+            rebuildProfileFromCurrentSignals()
+            return
+        }
         
         isLoading = true
         do {
@@ -536,10 +667,39 @@ public final class PlayViewModel: @unchecked Sendable {
             for game in fetchedGames {
                 gamesCache[game.id] = game
             }
+            rebuildProfileFromCurrentSignals()
         } catch {
             self.error = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func isTerminal(_ status: PlayStatus) -> Bool {
+        [.completed, .beaten, .abandoned, .dropped].contains(status)
+    }
+
+    private func activePickIds(in states: [String: UserGameState]) -> Set<String> {
+        Set(states.compactMap { gameId, state in
+            guard state.inPlayfitPicks,
+                  !state.excluded,
+                  state.status.map({ !isTerminal($0) }) ?? true else { return nil }
+            return gameId
+        })
+    }
+
+    private func uniqueRecommendations(_ recommendations: [RankedRecommendation]) -> [RankedRecommendation] {
+        var seen = Set<String>()
+        return recommendations.filter { seen.insert($0.game.id).inserted }
+    }
+
+    private func rebuildProfileFromCurrentSignals() {
+        profile = rebuildUserProfile(
+            onboardingLikedIds: onboardingLikedGameIds,
+            onboardingDislikedIds: onboardingDislikedGameIds,
+            gameStates: gameStates,
+            gamesCache: gamesCache
+        )
+        storage.saveProfile(profile, platformIds: selectedPlatformIds, onboardingCompleted: onboardingCompleted)
     }
 }
 

@@ -31,11 +31,16 @@ public enum AuthError: LocalizedError {
 public final class SupabaseAuthClient: NSObject {
     private let baseURL: URL
     private let anonKey: String
-    private let session = URLSession.shared
+    private let session: URLSession
 
-    public init(baseURL: URL = PlayfitAPI.supabaseURL, anonKey: String = PlayfitAPI.supabaseAnonKey) {
+    public init(
+        baseURL: URL = PlayfitAPI.supabaseURL,
+        anonKey: String = PlayfitAPI.supabaseAnonKey,
+        session: URLSession = .shared
+    ) {
         self.baseURL = baseURL
         self.anonKey = anonKey
+        self.session = session
     }
 
     // MARK: - Email / Password
@@ -61,6 +66,14 @@ public final class SupabaseAuthClient: NSObject {
         let data = try await execute(request)
         let token = try JSONDecoder().decode(TokenResponse.self, from: data)
         return token.session
+    }
+
+    /// Mirrors the web's `supabase.auth.resetPasswordForEmail`: always succeeds from the
+    /// caller's perspective so the UI can show a neutral message regardless of whether the
+    /// email is registered.
+    public func resetPasswordForEmail(_ email: String) async throws {
+        let request = try makeRequest(path: "/auth/v1/recover", body: ["email": email])
+        _ = try await execute(request)
     }
 
     public func signOut(accessToken: String) async {

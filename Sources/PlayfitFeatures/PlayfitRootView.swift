@@ -2,23 +2,51 @@ import PlayfitAPI
 import PlayfitDesignSystem
 import PlayfitModels
 import PlayfitStorage
+import Foundation
 import SwiftUI
 
 public struct PlayfitRootView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     @AppStorage("authEmail") private var authEmail: String = ""
     @State private var viewModel: PlayViewModel
     @State private var showOnboarding = false
     @State private var showSignInSheet = false
     @State private var isReady = false
+    @State private var showSplash = !ProcessInfo.processInfo.arguments.contains {
+        $0.hasPrefix("-playfit-ui-testing")
+    }
 
     public init() {
         self._viewModel = State(initialValue: PlayViewModel(apiClient: HTTPPlayfitClient()))
     }
 
     public var body: some View {
+        ZStack {
+            mainContent
+
+            if showSplash {
+                SplashView {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showSplash = false
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
+        }
+        .preferredColorScheme(appearanceMode.colorScheme)
+    }
+
+    private var mainContent: some View {
         Group {
-            if isReady {
+            if !isReady {
+                startupLoading
+            } else if viewModel.onboardingCompleted,
+                      viewModel.pool.isEmpty,
+                      let error = viewModel.error {
+                startupError(error)
+            } else {
                 if viewModel.onboardingCompleted {
                     mainTabView
                 } else if showOnboarding {
@@ -61,12 +89,65 @@ public struct PlayfitRootView: View {
                 }
             }
         }
+        .tint(.playfitAccent)
+        .transaction { transaction in
+            if reduceMotion {
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
+        }
+        .accessibilityIdentifier("playfit.root")
         .statusToast(message: $viewModel.toastMessage, style: viewModel.toastStyle)
         .task {
+            // Deterministic, offline states for UI tests: "-seeded" reaches the main
+            // tab bar (with an empty pool/picks) without a network round-trip; plain
+            // "-playfit-ui-testing" reaches the intro screen the same way.
+            if ProcessInfo.processInfo.arguments.contains("-playfit-ui-testing-seeded") {
+                viewModel.onboardingCompleted = true
+                isReady = true
+                return
+            }
+            if ProcessInfo.processInfo.arguments.contains("-playfit-ui-testing") {
+                isReady = true
+                return
+            }
             await viewModel.load()
             showOnboarding = viewModel.onboardingStarted && !viewModel.onboardingCompleted
             isReady = true
         }
+    }
+
+    private var startupLoading: some View {
+        ZStack {
+            Color.playfitBackground.ignoresSafeArea()
+            VStack(spacing: PlayfitSpacing.sm) {
+                ProgressView().controlSize(.large).tint(.playfitAccent)
+                    .accessibilityIdentifier("playfit.startup.loading")
+                Text("Loading Playfit…").font(.headline)
+                Text("Restoring your profile and recommendations.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .preferredColorScheme(appearanceMode.colorScheme)
+    }
+
+    private func startupError(_ message: String) -> some View {
+        ZStack {
+            Color.playfitBackground.ignoresSafeArea()
+            ContentUnavailableView {
+                Label("Playfit could not sync", systemImage: "icloud.slash")
+            } description: {
+                Text(message)
+            } actions: {
+                Button("Try Again") { Task { await viewModel.syncIfOnline() } }
+                    .buttonStyle(.borderedProminent)
+                Button("Use Local Data") { viewModel.clearError() }
+                    .buttonStyle(.bordered)
+            }
+            .accessibilityIdentifier("playfit.startup.error")
+        }
+        .preferredColorScheme(appearanceMode.colorScheme)
     }
 
     private var mainTabView: some View {
@@ -75,7 +156,7 @@ public struct PlayfitRootView: View {
                 TodayView()
             }
             .tabItem {
-                Label("Play Next", systemImage: "sparkles")
+                Label("Play Next", systemImage: "safari")
             }
 
             NavigationStack {
@@ -90,7 +171,7 @@ public struct PlayfitRootView: View {
                 TasteView()
             }
             .tabItem {
-                Label("Taste", systemImage: "chart.bar")
+                Label("Taste", systemImage: "slider.horizontal.3")
             }
 
             NavigationStack {
@@ -100,7 +181,33 @@ public struct PlayfitRootView: View {
                 Label("Settings", systemImage: "gearshape")
             }
         }
+        .accessibilityIdentifier("playfit.main.tabs")
+        .safeAreaInset(edge: .top, spacing: 0) {
+            syncStatusBar
+        }
         .environment(\.playViewModel, viewModel)
         .preferredColorScheme(appearanceMode.colorScheme)
+    }
+
+    @ViewBuilder
+    private var syncStatusBar: some View {
+        if viewModel.syncState == .syncing {
+            Label("Syncing changes…", systemImage: "icloud.and.arrow.up")
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background(.regularMaterial)
+        } else if viewModel.syncState == .failed || viewModel.pendingActionsCount > 0 {
+            HStack(spacing: PlayfitSpacing.sm) {
+                Label("Changes waiting to sync", systemImage: "exclamationmark.icloud")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Button("Retry") { Task { await viewModel.syncIfOnline() } }
+                    .font(.caption.bold())
+            }
+            .padding(.horizontal, PlayfitSpacing.md)
+            .padding(.vertical, 7)
+            .background(.orange.opacity(0.14))
+        }
     }
 }

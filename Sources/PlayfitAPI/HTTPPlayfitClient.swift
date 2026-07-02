@@ -7,25 +7,30 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
     private let deviceID: String
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
+    private let authLock = NSLock()
     private var authSession: AuthSession?
+    private var refreshTask: Task<AuthSession, Error>?
 
-    public init(baseURL: URL = PlayfitAPI.default) {
+    public init(baseURL: URL = PlayfitAPI.default, session: URLSession = .shared) {
         self.baseURL = baseURL
-        self.session = URLSession.shared
+        self.session = session
         self.deviceID = DeviceID.loadOrCreate()
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()
     }
 
     public func setAuthSession(_ session: AuthSession?) {
-        self.authSession = session
+        authLock.withLock {
+            self.authSession = session
+            self.refreshTask = nil
+        }
     }
 
     // MARK: - PlayfitAPIClient
 
     public func fetchPlayNext() async throws -> PlayNextModel {
         let url = urlWithDevice("/api/recommendations/today")
-        var request = makeRequest(url: url)
+        var request = try await makeRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let (data, response) = try await session.data(for: request)
@@ -48,8 +53,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func fetchPicks() async throws -> [RankedRecommendation] {
         let url = urlWithDevice("/api/recommendations/picks")
-        var request = makeRequest(url: url)
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let request = try await makeRequest(url: url)
         return try await decode(request)
     }
 
@@ -62,7 +66,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
         items.append(URLQueryItem(name: "q", value: query))
         components.queryItems = items
         guard let finalURL = components.url else { throw APIError.invalidURL }
-        let request = makeRequest(url: finalURL)
+        let request = try await makeRequest(url: finalURL)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unexpectedResponse
@@ -74,9 +78,27 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
         return envelope.games
     }
 
+    public func fetchGame(gameId: String) async throws -> Game? {
+        let url = urlWithDevice("/api/games/\(gameId)")
+        let request = try await makeRequest(url: url)
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.unexpectedResponse
+        }
+        if httpResponse.statusCode == 404 { return nil }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
+        }
+        do {
+            return try decoder.decode(Game.self, from: data)
+        } catch {
+            throw APIError.decoding(error)
+        }
+    }
+
     public func fetchProfile() async throws -> UserProfile? {
         let url = urlWithDevice("/api/profile")
-        let request = makeRequest(url: url)
+        let request = try await makeRequest(url: url)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unexpectedResponse
@@ -91,7 +113,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func fetchGameStates() async throws -> [String: UserGameState] {
         let url = urlWithDevice("/api/profile")
-        let request = makeRequest(url: url)
+        let request = try await makeRequest(url: url)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unexpectedResponse
@@ -106,7 +128,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func fetchOnboardingCompletedAt() async throws -> String? {
         let url = urlWithDevice("/api/profile")
-        let request = makeRequest(url: url)
+        let request = try await makeRequest(url: url)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unexpectedResponse
@@ -121,7 +143,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func saveGameState(gameId: String, state: UserGameState) async throws {
         let url = urlWithDevice("/api/profile/games/\(gameId)")
-        var request = makeRequest(url: url)
+        var request = try await makeRequest(url: url)
         request.httpMethod = "PATCH"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(state)
@@ -136,7 +158,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func saveProfile(profile: UserProfile, gameStates: [String: UserGameState], onboarding: OnboardingPayload) async throws {
         let url = urlWithDevice("/api/profile")
-        var request = makeRequest(url: url)
+        var request = try await makeRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -211,7 +233,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func fetchPlatforms() async throws -> [Platform] {
         let url = urlWithDevice("/api/platforms")
-        let request = makeRequest(url: url)
+        let request = try await makeRequest(url: url)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unexpectedResponse
@@ -225,7 +247,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func deleteProfile() async throws {
         let url = urlWithDevice("/api/profile")
-        var request = makeRequest(url: url)
+        var request = try await makeRequest(url: url)
         request.httpMethod = "DELETE"
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -238,7 +260,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func deleteGameState(gameId: String) async throws {
         let url = urlWithDevice("/api/profile/games/\(gameId)")
-        var request = makeRequest(url: url)
+        var request = try await makeRequest(url: url)
         request.httpMethod = "DELETE"
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -251,7 +273,7 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     public func fetchGamesBatch(gameIds: [String]) async throws -> [Game] {
         let url = urlWithDevice("/api/games/batch")
-        var request = makeRequest(url: url)
+        var request = try await makeRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let bodyPayload = ["gameIds": gameIds]
@@ -267,12 +289,86 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
     // MARK: - Helpers
 
-    private func makeRequest(url: URL) -> URLRequest {
+    private func makeRequest(url: URL) async throws -> URLRequest {
+        if let current = authLock.withLock({ authSession }), current.expires(within: 60) {
+            let task = authLock.withLock { () -> Task<AuthSession, Error> in
+                if let refreshTask { return refreshTask }
+                let newTask = Task { try await self.refreshSession(current) }
+                refreshTask = newTask
+                return newTask
+            }
+            do {
+                let refreshed = try await task.value
+                let applied = authLock.withLock { () -> Bool in
+                    if authSession?.refreshToken == current.refreshToken {
+                        authSession = refreshed
+                        refreshTask = nil
+                        return true
+                    }
+                    refreshTask = nil
+                    return false
+                }
+                if applied {
+                    AuthSessionStore.save(refreshed)
+                }
+            } catch {
+                let cleared = authLock.withLock { () -> Bool in
+                    guard authSession?.refreshToken == current.refreshToken else {
+                        refreshTask = nil
+                        return false
+                    }
+                    authSession = nil
+                    refreshTask = nil
+                    return true
+                }
+                if cleared {
+                    AuthSessionStore.clear()
+                }
+                throw error
+            }
+        }
+
         var request = URLRequest(url: url)
-        if let token = authSession?.accessToken {
+        if let token = authLock.withLock({ authSession?.accessToken }) {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         return request
+    }
+
+    private func refreshSession(_ current: AuthSession) async throws -> AuthSession {
+        guard var components = URLComponents(
+            url: PlayfitAPI.supabaseURL.appendingPathComponent("/auth/v1/token"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw APIError.invalidURL
+        }
+        components.queryItems = [URLQueryItem(name: "grant_type", value: "refresh_token")]
+        guard let url = components.url else { throw APIError.invalidURL }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(PlayfitAPI.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(
+            withJSONObject: ["refresh_token": current.refreshToken]
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.unexpectedResponse
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
+        }
+
+        let refreshed = try decoder.decode(RefreshTokenResponse.self, from: data)
+        return AuthSession(
+            accessToken: refreshed.accessToken,
+            refreshToken: refreshed.refreshToken,
+            expiresAt: Date().addingTimeInterval(refreshed.expiresIn),
+            userId: refreshed.user?.id ?? current.userId,
+            email: refreshed.user?.email ?? current.email
+        )
     }
 
     private func urlWithDevice(_ path: String) -> URL {
@@ -300,18 +396,43 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
 
 // MARK: - Request/Response Types
 
-private struct ProfileState: Codable {
+struct ProfileState: Codable {
     let gameStates: [String: UserGameState]?
     let profile: UserProfile?
     let onboarding: OnboardingState?
+
+    enum CodingKeys: String, CodingKey {
+        case gameStates = "game_states"
+        case profile
+        case onboarding
+    }
 }
 
-private struct OnboardingState: Codable {
+struct OnboardingState: Codable {
     let onboardingCompletedAt: String?
 }
 
-private struct ProfileEnvelope: Codable {
+struct ProfileEnvelope: Codable {
     let state: ProfileState?
+}
+
+private struct RefreshTokenResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String
+    let expiresIn: Double
+    let user: RefreshUser?
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresIn = "expires_in"
+        case user
+    }
+}
+
+private struct RefreshUser: Decodable {
+    let id: String
+    let email: String?
 }
 
 private struct GameSearchResponse: Codable {

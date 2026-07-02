@@ -5,6 +5,7 @@ public enum ToastStyle: Sendable {
 }
 
 public struct StatusToast: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let message: String
     let style: ToastStyle
 
@@ -26,11 +27,14 @@ public struct StatusToast: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
         .padding(.horizontal, 16)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isStaticText)
     }
 }
 
 struct ToastOverlayModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var message: String?
     let style: ToastStyle
 
@@ -41,16 +45,16 @@ struct ToastOverlayModifier: ViewModifier {
                     StatusToast(message: msg, style: style)
                         .id(msg)
                         .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                         .task {
                             try? await Task.sleep(for: .seconds(2.5))
-                            withAnimation(.spring(response: 0.4)) {
+                            withAnimation(reduceMotion ? nil : .spring(response: 0.4)) {
                                 message = nil
                             }
                         }
                 }
             }
-            .animation(.spring(response: 0.4), value: message != nil)
+            .animation(reduceMotion ? nil : .spring(response: 0.4), value: message != nil)
     }
 }
 

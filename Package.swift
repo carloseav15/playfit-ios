@@ -50,7 +50,6 @@ let package = Package(
             dependencies: [
                 "PlayfitAPI",
                 "PlayfitModels",
-                "PlayfitMocks",
                 "PlayfitDesignSystem",
                 "PlayfitLogic",
                 "PlayfitStorage",
@@ -65,6 +64,18 @@ let package = Package(
                 "PlayfitFeatures",
                 "PlayfitMocks",
             ]
+        ),
+        .testTarget(
+            name: "PlayfitModelsTests",
+            dependencies: ["PlayfitModels"]
+        ),
+        .testTarget(
+            name: "PlayfitAPITests",
+            dependencies: ["PlayfitAPI", "PlayfitModels"]
+        ),
+        .testTarget(
+            name: "PlayfitLogicTests",
+            dependencies: ["PlayfitLogic", "PlayfitModels"]
         ),
     ]
 )

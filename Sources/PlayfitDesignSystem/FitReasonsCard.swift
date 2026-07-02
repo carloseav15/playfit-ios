@@ -14,10 +14,10 @@ public struct FitReasonsCard: View {
 
     private var tint: Color {
         switch tone {
-        case .positive: .green
-        case .warning: .yellow
-        case .negative: .red
-        case .info: .blue
+        case .positive: .playfitPositive
+        case .warning: .playfitWarning
+        case .negative: .playfitNegative
+        case .info: .playfitToneAccent
         }
     }
 

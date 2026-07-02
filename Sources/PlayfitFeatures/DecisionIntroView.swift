@@ -79,10 +79,10 @@ public struct DecisionIntroView: View {
             VStack(alignment: .leading, spacing: PlayfitSpacing.md) {
                 (
                     Text("Your next game, ")
-                        .font(.system(size: 36, weight: .black))
+                        .font(.largeTitle.weight(.black))
                         .foregroundColor(Color.playfitForeground)
                     + Text("curated.")
-                        .font(.system(size: 36, weight: .black))
+                        .font(.largeTitle.weight(.black))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [Color.playfitAccent, Color.pink],
@@ -106,10 +106,10 @@ public struct DecisionIntroView: View {
 
             VStack(spacing: PlayfitSpacing.sm) {
                 Button(action: onStart) {
-                    Label("Find What to Play", systemImage: "compass")
+                    Label("Find What to Play", systemImage: "safari")
                         .font(.headline.weight(.black))
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                         .padding(.vertical, 12)
                         .background(
                             LinearGradient(
@@ -127,12 +127,13 @@ public struct DecisionIntroView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("playfit.intro.start")
 
                 Button(action: onSignIn) {
                     Label("Sign In", systemImage: "arrow.right")
                         .font(.subheadline.weight(.bold))
                         .foregroundColor(Color.playfitForeground)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                         .padding(.vertical, 12)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                         .overlay(
@@ -141,6 +142,7 @@ public struct DecisionIntroView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("playfit.intro.signin")
             }
         }
     }
@@ -165,7 +167,13 @@ public struct DecisionIntroView: View {
             }
 
             HStack(spacing: PlayfitSpacing.md) {
-                PlayfitCoverPlaceholder(title: "Hades")
+                PlayfitGameCover(
+                    game: Game(
+                        id: "hades",
+                        title: "Hades",
+                        coverPath: "/covers/games/hades.jpg"
+                    )
+                )
                     .frame(width: 72)
 
                 VStack(alignment: .leading, spacing: 4) {

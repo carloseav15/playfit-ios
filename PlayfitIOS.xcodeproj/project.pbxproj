@@ -10,12 +10,25 @@
 		0F1000022D00000000000001 /* PlayfitIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1000032D00000000000001 /* PlayfitIOSApp.swift */; };
 		0F1000042D00000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0F1000052D00000000000001 /* Assets.xcassets */; };
 		0F1000062D00000000000001 /* PlayfitFeatures in Frameworks */ = {isa = PBXBuildFile; productRef = 0F1000072D00000000000001 /* PlayfitFeatures */; };
+		0F2000012D00000000000001 /* PlayfitIOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2000022D00000000000001 /* PlayfitIOSUITests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0F20000C2D00000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0F1000102D00000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0F1000012D00000000000001;
+			remoteInfo = PlayfitIOS;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0F1000032D00000000000001 /* PlayfitIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayfitIOSApp.swift; sourceTree = "<group>"; };
 		0F1000052D00000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0F1000082D00000000000001 /* PlayfitIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlayfitIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0F2000022D00000000000001 /* PlayfitIOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayfitIOSUITests.swift; sourceTree = "<group>"; };
+		0F2000032D00000000000001 /* PlayfitIOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlayfitIOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,6 +40,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0F2000062D00000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -34,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				0F10000B2D00000000000001 /* PlayfitIOS */,
+				0F2000042D00000000000001 /* PlayfitIOSUITests */,
 				0F10000C2D00000000000001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -51,8 +72,17 @@
 			isa = PBXGroup;
 			children = (
 				0F1000082D00000000000001 /* PlayfitIOS.app */,
+				0F2000032D00000000000001 /* PlayfitIOSUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		0F2000042D00000000000001 /* PlayfitIOSUITests */ = {
+			isa = PBXGroup;
+			children = (
+				0F2000022D00000000000001 /* PlayfitIOSUITests.swift */,
+			);
+			path = PlayfitIOSUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -78,6 +108,26 @@
 			productReference = 0F1000082D00000000000001 /* PlayfitIOS.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0F2000082D00000000000001 /* PlayfitIOSUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0F2000092D00000000000001 /* Build configuration list for PBXNativeTarget "PlayfitIOSUITests" */;
+			buildPhases = (
+				0F2000052D00000000000001 /* Sources */,
+				0F2000062D00000000000001 /* Frameworks */,
+				0F2000072D00000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0F20000D2D00000000000001 /* PBXTargetDependency */,
+			);
+			name = PlayfitIOSUITests;
+			packageProductDependencies = (
+			);
+			productName = PlayfitIOSUITests;
+			productReference = 0F2000032D00000000000001 /* PlayfitIOSUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -90,6 +140,10 @@
 				TargetAttributes = {
 					0F1000012D00000000000001 = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					0F2000082D00000000000001 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 0F1000012D00000000000001;
 					};
 				};
 			};
@@ -111,6 +165,7 @@
 			projectRoot = "";
 			targets = (
 				0F1000012D00000000000001 /* PlayfitIOS */,
+				0F2000082D00000000000001 /* PlayfitIOSUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -121,6 +176,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				0F1000042D00000000000001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0F2000072D00000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,7 +197,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0F2000052D00000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F2000012D00000000000001 /* PlayfitIOSUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0F20000D2D00000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0F1000012D00000000000001 /* PlayfitIOS */;
+			targetProxy = 0F20000C2D00000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0F1000132D00000000000001 /* Debug */ = {
@@ -323,6 +401,42 @@
 			};
 			name = Release;
 		};
+		0F20000A2D00000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 83L6KR4J3A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.carlosarancibia.playfit.ios.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PlayfitIOS;
+			};
+			name = Debug;
+		};
+		0F20000B2D00000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 83L6KR4J3A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.carlosarancibia.playfit.ios.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PlayfitIOS;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -340,6 +454,15 @@
 			buildConfigurations = (
 				0F1000132D00000000000001 /* Debug */,
 				0F1000142D00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0F2000092D00000000000001 /* Build configuration list for PBXNativeTarget "PlayfitIOSUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0F20000A2D00000000000001 /* Debug */,
+				0F20000B2D00000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

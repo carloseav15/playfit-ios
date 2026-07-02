@@ -8,7 +8,7 @@ import AppKit
 
 extension Color {
     public static let playfitBackground = dynamicColor(lightHex: "#f8fafc", darkHex: "#070a12")
-    public static let playfitForeground = dynamicColor(lightHex: "#17201d", darkHex: "#f8fafc")
+    public static let playfitForeground = dynamicColor(lightHex: "#0f172a", darkHex: "#f8fafc")
     public static let playfitAccent = dynamicColor(lightHex: "#0f766e", darkHex: "#ff6a3d")
     public static let playfitInk = dynamicColor(lightHex: "#0d9488", darkHex: "#38bdf8")
     
