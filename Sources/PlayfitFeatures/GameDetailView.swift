@@ -93,8 +93,8 @@ public struct GameDetailView: View {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
                             Text(entry.game.title).font(.largeTitle.bold())
-                            if let year = entry.game.releaseYear {
-                                Text(year).font(.subheadline).foregroundStyle(.secondary)
+                            if isValidReleaseYear(entry.game.releaseYear) {
+                                Text(entry.game.releaseYear ?? "").font(.subheadline).foregroundStyle(.secondary)
                             }
                         }
                         Spacer()
@@ -115,8 +115,8 @@ public struct GameDetailView: View {
                         }
                     }
 
-                    if !entry.game.primaryGenre.isEmpty {
-                        Text(entry.game.primaryGenre).font(.subheadline).foregroundStyle(.secondary)
+                    if !formatDisplayGenre(entry.game.primaryGenre).isEmpty {
+                        Text(formatDisplayGenre(entry.game.primaryGenre)).font(.subheadline).foregroundStyle(.secondary)
                     }
 
                     if !entry.game.availablePlatformNames.isEmpty {
@@ -198,6 +198,8 @@ public struct GameDetailView: View {
                     systemImage: viewModel.isPicked(entry.game.id) ? "bookmark.fill" : "bookmark"
                 )
                 .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -205,13 +207,18 @@ public struct GameDetailView: View {
             Button { showAlreadyPlayed = true } label: {
                 Label("Already played", systemImage: "checkmark.circle")
                     .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .tint(.playfitPositive)
 
             Button { viewModel.notForMe(entry) } label: {
                 Label("Not for me", systemImage: "xmark.circle")
                     .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)

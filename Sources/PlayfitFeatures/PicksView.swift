@@ -47,24 +47,24 @@ public struct PicksView: View {
             }
         }
         .navigationTitle("Saved Picks")
-        .confirmationDialog(
-            "Manage Pick",
-            isPresented: Binding(
-                get: { manageEntry != nil && !showAlreadyPlayed },
-                set: { if !$0 && !showAlreadyPlayed { manageEntry = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button("Already Played It") { showAlreadyPlayed = true }
-            Button("No, skip this", role: .destructive) {
-                if let entry = manageEntry { viewModel.notForMe(entry) }
-                manageEntry = nil
+        .sheet(isPresented: Binding(
+            get: { manageEntry != nil && !showAlreadyPlayed },
+            set: { if !$0 && !showAlreadyPlayed { manageEntry = nil } }
+        )) {
+            if let entry = manageEntry {
+                ManagePickSheet(
+                    title: entry.game.title,
+                    onAlreadyPlayed: { showAlreadyPlayed = true },
+                    onNotForMe: {
+                        viewModel.notForMe(entry)
+                        manageEntry = nil
+                    },
+                    onRemove: {
+                        viewModel.removePick(entry.game.id)
+                        manageEntry = nil
+                    }
+                )
             }
-            Button("Remove Pick", role: .destructive) {
-                if let entry = manageEntry { viewModel.removePick(entry.game.id) }
-                manageEntry = nil
-            }
-            Button("Cancel", role: .cancel) { manageEntry = nil }
         }
         .sheet(isPresented: $showAlreadyPlayed) {
             if let entry = manageEntry {
@@ -135,5 +135,103 @@ private struct PickRowView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Manage \(entry.game.title)")
         }
+    }
+}
+
+// MARK: - Manage Pick Sheet
+
+private struct ManagePickSheet: View {
+    let title: String
+    let onAlreadyPlayed: () -> Void
+    let onNotForMe: () -> Void
+    let onRemove: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Color.playfitBackground.ignoresSafeArea()
+
+            VStack(spacing: PlayfitSpacing.md) {
+                HStack {
+                    Spacer()
+                    Button("Done") { dismiss() }
+                        .font(.subheadline.bold())
+                        .foregroundColor(.playfitAccent)
+                }
+                .padding(.horizontal)
+                .padding(.top, 16)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Manage Pick")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
+                    Text(title)
+                        .font(.title3.weight(.black))
+                        .lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+                VStack(spacing: PlayfitSpacing.sm) {
+                    optionRow(
+                        label: "Already Played It",
+                        icon: "checkmark.circle.fill",
+                        color: .playfitPositive
+                    ) {
+                        // No explicit dismiss(): the parent's `isPresented` binding for
+                        // this sheet already includes `!showAlreadyPlayed`, so setting
+                        // that (inside onAlreadyPlayed) closes this sheet and opens the
+                        // Already Played one in one step, instead of racing two dismissals.
+                        onAlreadyPlayed()
+                    }
+                    optionRow(
+                        label: "No, skip this",
+                        icon: "xmark.circle.fill",
+                        color: .playfitNegative
+                    ) {
+                        onNotForMe()
+                        dismiss()
+                    }
+                    optionRow(
+                        label: "Remove Pick",
+                        icon: "trash.fill",
+                        color: .playfitNegative
+                    ) {
+                        onRemove()
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer()
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func optionRow(label: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: PlayfitSpacing.md) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+                    .frame(width: 44, height: 44)
+                    .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+
+                Text(label)
+                    .font(.subheadline.bold())
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .padding(PlayfitSpacing.md)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }

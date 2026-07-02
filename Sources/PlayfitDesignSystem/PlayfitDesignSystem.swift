@@ -62,6 +62,9 @@ private actor CoverImageLoader {
 }
 
 public struct PlayfitGameCover: View {
+    // The fixed portrait box every cover renders into (matches web's `aspect-[2/3]`-ish crop).
+    private static let boxRatio: CGFloat = 0.72
+
     private let game: Game
     private let baseURL: URL
     @State private var image: Image?
@@ -78,9 +81,13 @@ public struct PlayfitGameCover: View {
     public var body: some View {
         ZStack {
             if let image {
+                // Covers vary wildly in shape (portrait box art, square logos,
+                // widescreen screenshots), so the image always fits inside the
+                // fixed box instead of being cropped — nothing gets cut off.
+                backdrop
                 image
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: .fit)
             } else if didFail || game.resolvedCoverURL(baseURL: baseURL) == nil {
                 coverFallback
             } else {
@@ -88,7 +95,7 @@ public struct PlayfitGameCover: View {
                 ProgressView().tint(.secondary)
             }
         }
-        .aspectRatio(0.72, contentMode: .fit)
+        .aspectRatio(Self.boxRatio, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
         .accessibilityElement(children: .ignore)
@@ -98,22 +105,20 @@ public struct PlayfitGameCover: View {
         }
     }
 
+    private var backdrop: some View {
+        LinearGradient(
+            colors: [.indigo, .purple, .black],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
     private var coverFallback: some View {
-        ZStack(alignment: .bottomLeading) {
-            LinearGradient(
-                colors: [.indigo, .purple, .black],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+        ZStack {
+            backdrop
             Image(systemName: "gamecontroller.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.white.opacity(0.72))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            Text(game.title)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .lineLimit(3)
-                .padding(8)
         }
     }
 

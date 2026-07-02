@@ -345,7 +345,7 @@ public struct OnboardingView: View {
                             Text(game.title)
                                 .font(.headline)
                                 .lineLimit(1)
-                            Text(game.genres.joined(separator: " / "))
+                            Text(game.genres.map(formatDisplayGenre).joined(separator: " / "))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -401,7 +401,7 @@ public struct OnboardingView: View {
                                 Text(game.title)
                                     .font(.headline)
                                     .lineLimit(1)
-                                Text(game.genres.joined(separator: " / "))
+                                Text(game.genres.map(formatDisplayGenre).joined(separator: " / "))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -582,13 +582,13 @@ public struct OnboardingView: View {
                                     .lineLimit(1)
 
                                 HStack(spacing: 4) {
-                                    if !game.primaryGenre.isEmpty {
-                                        Text(game.primaryGenre)
+                                    if !formatDisplayGenre(game.primaryGenre).isEmpty {
+                                        Text(formatDisplayGenre(game.primaryGenre))
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
-                                    if let year = game.releaseYear, isValidReleaseYear(year) {
-                                        Text("• \(year)")
+                                    if isValidReleaseYear(game.releaseYear) {
+                                        Text("• \(game.releaseYear ?? "")")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
@@ -726,17 +726,15 @@ public struct OnboardingView: View {
             completedAt: completedAt
         )
 
-        // Sync to server immediately
+        // Upload the profile before handing off: `onComplete` triggers
+        // `syncIfOnline()`, which asks the server for today's recommendations.
+        // If that request lands before this upload does, the server has no
+        // platforms/favorites on record yet and returns an empty (not
+        // erroring) result — so the built-in needsResync retry never fires.
         Task {
             try? await viewModel.syncProfileToServer()
+            onComplete()
         }
-
-        onComplete()
-    }
-
-    private func isValidReleaseYear(_ year: String) -> Bool {
-        guard let y = Int(year) else { return false }
-        return y >= 1950 && y <= Calendar.current.component(.year, from: Date()) + 2
     }
 }
 

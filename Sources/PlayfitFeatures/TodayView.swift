@@ -303,6 +303,8 @@ public struct TodayView: View {
                     } label: {
                         Label("Already Played", systemImage: "checkmark.circle")
                             .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -314,9 +316,12 @@ public struct TodayView: View {
                     } label: {
                         Label("No, skip this", systemImage: "forward")
                             .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .tint(.playfitNegative)
                 }
 
                 Button {
@@ -409,7 +414,7 @@ private struct CompactRecommendationRow: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
 
-                    Text(entry.game.genres.joined(separator: " / "))
+                    Text(entry.game.genres.map(formatDisplayGenre).joined(separator: " / "))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 

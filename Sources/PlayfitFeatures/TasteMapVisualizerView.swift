@@ -137,26 +137,28 @@ public struct TasteMapVisualizerView: View {
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.primary.opacity(0.05), lineWidth: 1))
                 .padding(.horizontal)
                 
-                // Game Preview Carousel
-                if let activeNode = activeNode {
-                    carouselCard(activeNode, totalCount: nodes.count, currentIndex: nodes.firstIndex { $0.id == activeNode.id } ?? 0) {
-                        // Previous action
-                        if let idx = nodes.firstIndex(where: { $0.id == activeNode.id }) {
-                            let prevIdx = idx == 0 ? nodes.count - 1 : idx - 1
-                            if prevIdx < nodes.count {
-                                activeNodeId = nodes[prevIdx].id
+                // Games list — a horizontal scroll instead of a one-at-a-time
+                // carousel with prev/next buttons, so more of the space is
+                // spent showing games instead of navigation chrome.
+                if !nodes.isEmpty {
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: PlayfitSpacing.sm) {
+                                ForEach(nodes) { node in
+                                    nodeCard(node, isSelected: activeNode?.id == node.id)
+                                        .id(node.id)
+                                }
                             }
+                            .padding(.horizontal)
+                            .padding(.vertical, 4)
                         }
-                    } onNext: {
-                        // Next action
-                        if let idx = nodes.firstIndex(where: { $0.id == activeNode.id }) {
-                            let nextIdx = idx == nodes.count - 1 ? 0 : idx + 1
-                            if nextIdx < nodes.count {
-                                activeNodeId = nodes[nextIdx].id
+                        .onChange(of: activeNodeId) { _, newValue in
+                            guard let newValue else { return }
+                            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
+                                proxy.scrollTo(newValue, anchor: .center)
                             }
                         }
                     }
-                    .padding()
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
                 } else {
                     Spacer()
@@ -172,7 +174,13 @@ public struct TasteMapVisualizerView: View {
     
     private static let terminalStatuses: Set<PlayStatus> = [.beaten, .completed, .abandoned, .dropped]
 
-    private func classify(_ state: UserGameState) -> GameNode.NodeType {
+    private func classify(_ gameId: String, _ state: UserGameState) -> GameNode.NodeType {
+        // Onboarding favorites/miss never get a rating (see `completeOnboarding`),
+        // so without this check they'd fall through to the rating-based logic
+        // below and render as "avoided" — the opposite of what the user picked.
+        if viewModel.onboardingLikedGameIds.contains(gameId) { return .liked }
+        if viewModel.onboardingDislikedGameIds.contains(gameId) { return .avoided }
+
         let hasRating = (state.rating ?? 0) > 0
         let isPlaying = state.status == .playing
         let isTerminal = state.status.map { Self.terminalStatuses.contains($0) } ?? false
@@ -190,7 +198,7 @@ public struct TasteMapVisualizerView: View {
         var list: [GameNode] = []
         for (gameId, state) in viewModel.gameStates {
             guard let game = viewModel.gamesCache[gameId] else { continue }
-            let type = classify(state)
+            let type = classify(gameId, state)
             let coords = calculateGameCoordinates(game)
             list.append(GameNode(id: game.id, game: game, x: coords.x, y: coords.y, type: type))
         }
@@ -213,72 +221,42 @@ public struct TasteMapVisualizerView: View {
         }
     }
     
-    private func carouselCard(_ node: GameNode, totalCount: Int, currentIndex: Int, onPrev: @escaping () -> Void, onNext: @escaping () -> Void) -> some View {
-        PlayfitGlassCard {
-            HStack(spacing: PlayfitSpacing.md) {
-                // Carousel Navigation Left
-                Button(action: onPrev) {
-                    Image(systemName: "chevron.left")
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
-                        .frame(width: 44, height: 44)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Previous game")
-
-                PlayfitGameCover(game: node.game)
-                    .frame(width: 52)
-                
-                // Center info block
-                VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
-                    HStack {
-                        Text(node.game.primaryGenre.capitalized)
-                            .font(.caption2.bold())
-                            .foregroundColor(.playfitAccent)
-                        Spacer()
-                        Text(node.type == .liked ? "Liked" : (node.type == .avoided ? "Avoided" : "Saved"))
-                            .font(.caption2.bold())
-                            .foregroundColor(nodeColor(node.type))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(nodeColor(node.type).opacity(0.12), in: Capsule())
-                    }
-                    
-                    Text(node.game.title)
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                    
-                    HStack(spacing: 4) {
-                        ForEach(node.game.tags.prefix(2), id: \.self) { tag in
-                            Text(formatTagLabel(tag))
-                                .font(.caption2.monospaced().weight(.semibold))
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
-                                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 4))
-                        }
-                    }
-                    .padding(.top, 2)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Carousel Navigation Right
-                Button(action: onNext) {
-                    Image(systemName: "chevron.right")
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
-                        .frame(width: 44, height: 44)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Next game")
+    private func nodeCard(_ node: GameNode, isSelected: Bool) -> some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
+                activeNodeId = node.id
             }
-            .padding(12)
+        } label: {
+            VStack(alignment: .leading, spacing: PlayfitSpacing.xs) {
+                PlayfitGameCover(game: node.game)
+                    .frame(width: 88)
+
+                Text(node.game.title)
+                    .font(.caption.bold())
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+
+                Text(nodeTypeLabel(node.type).capitalized)
+                    .font(.caption2.bold())
+                    .foregroundColor(nodeColor(node.type))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(nodeColor(node.type).opacity(0.12), in: Capsule())
+            }
+            .padding(PlayfitSpacing.sm)
+            .frame(width: 104, alignment: .leading)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? nodeColor(node.type) : Color.clear, lineWidth: 2)
+            )
         }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(node.game.title), \(nodeTypeLabel(node.type))")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
-    
+
     private func calculateGameCoordinates(_ game: Game) -> GameCoordinate {
         var x = 0.0
         var y = 0.0
