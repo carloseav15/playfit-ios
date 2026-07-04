@@ -2,7 +2,7 @@
 
 ## Intent
 
-Playfit for iOS should be a native product showcase, not a thin wrapper around the web app. It borrows the product contract and information architecture from `/play`, but it should use iOS-native navigation, materials, gestures, persistence, and accessibility.
+Playfit for iOS should be a native product showcase, not a thin wrapper around the web app. It borrows the product contract and information architecture from the Playfit web product, but it should use iOS-native navigation, materials, gestures, persistence, and accessibility.
 
 ## Package Targets
 

@@ -1,21 +1,23 @@
-# `/play` to iOS Mapping
+# Web to iOS Route Mapping
 
-The native iOS app should start from the web `/play` mobile flow, but it should not copy React components directly.
+The native iOS app should start from the web product flow, but it should not copy React components directly.
 
 ## Source Web Routes
 
+All web routes are at root level (Next.js route group `(play)`, no `/play` prefix):
+
 ```text
-/play
-/play/game/[gameId]
-/play/picks
-/play/taste
-/play/settings
+/
+/game/[gameId]
+/picks
+/taste
+/settings
 ```
 
 Source files:
 
 ```text
-/Users/carancibia/Projects/playfit/product/apps/web/src/app/play
+/Users/carancibia/Projects/playfit/product/apps/web/src/app/(play)
 /Users/carancibia/Projects/playfit/product/apps/web/src/components/playfit-mvp
 ```
 
@@ -23,11 +25,11 @@ Source files:
 
 | Web route | iOS screen | SwiftUI file |
 | --- | --- | --- |
-| `/play` | Today / Play Next | `TodayView.swift` |
-| `/play/game/[gameId]` | Game Detail | `GameDetailView.swift` |
-| `/play/picks` | Picks | `PicksView.swift` |
-| `/play/taste` | Taste | `TasteView.swift` |
-| `/play/settings` | Settings | `SettingsView.swift` |
+| `/` | Today / Play Next | `TodayView.swift` |
+| `/game/[gameId]` | Game Detail | `GameDetailView.swift` |
+| `/picks` | Picks | `PicksView.swift` |
+| `/taste` | Taste | `TasteView.swift` |
+| `/settings` | Settings | `SettingsView.swift` |
 
 ## Product Contract
 

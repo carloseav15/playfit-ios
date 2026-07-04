@@ -1,6 +1,6 @@
 # playfit-ios
 
-**Public portfolio project.** Native iOS showcase for the [Playfit](https://github.com/carloseav15/playfit) `/play` experience.
+**Public portfolio project.** Native iOS showcase for the [Playfit](https://github.com/carloseav15/playfit) product experience.
 
 This repo is a subordinate/portfolio implementation of the Playfit mobile product vision. The main project ecosystem lives at [github.com/carloseav15/playfit](https://github.com/carloseav15/playfit).
 
@@ -8,7 +8,7 @@ This folder intentionally starts as a Swift Package, not an Xcode project. The g
 
 ## Scope
 
-The iOS app should reinterpret the mobile `/play` product flow from the web app:
+The iOS app should reinterpret the mobile Playfit product flow from the web app:
 
 - `Today / Play Next`: one strong recommendation plus a short queue.
 - `Game Detail`: cover, metadata, recommendation reasons, and action buttons.

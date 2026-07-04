@@ -1,6 +1,6 @@
 # Playfit iOS — Design System & UI Kit Mapping
 
-Este documento define la traducción semántica del sistema de diseño (UI Kit) y componentes de `/play` web hacia el entorno nativo de SwiftUI en iOS, adoptando las guías de diseño de Apple (HIG) y detallando las configuraciones de red y OAuth de Supabase.
+Este documento define la traducción semántica del sistema de diseño (UI Kit) y componentes del producto web hacia el entorno nativo de SwiftUI en iOS, adoptando las guías de diseño de Apple (HIG) y detallando las configuraciones de red y OAuth de Supabase.
 
 ---
 
@@ -51,9 +51,9 @@ Lucide Icons se reemplaza por **SF Symbols** de Apple para mantener coherencia n
 
 ---
 
-## 2. Traducción de Componentes `/play` a SwiftUI (Estilo HIG Apple)
+## 2. Traducción de Componentes del Producto a SwiftUI (Estilo HIG Apple)
 
-Para que los componentes de `/play` se sientan nativos y mantengan la estética de la app, adaptaremos su diseño de la siguiente manera:
+Para que los componentes del producto se sientan nativos y mantengan la estética de la app, adaptaremos su diseño de la siguiente manera:
 
 ### A. La Tarjeta Estrella (Hero Recommendation Card)
 * **Web:** Es una tarjeta con un fondo translúcido semi-opaco y efectos de borde difuminados mediante Tailwind.
@@ -76,7 +76,7 @@ Para que los componentes de `/play` se sientan nativos y mantengan la estética 
   * Mostrar un placeholder elegante con un degradado en escala de grises y un icono de mando de consola (`gamecontroller.fill`) en el centro mientras la portada carga de forma asíncrona (`AsyncImage`).
 
 ### D. Dossier de Detalles del Juego
-* **Web:** Ruta `/play/game/[gameId]` estructurada como una página web vertical.
+* **Web:** Ruta `/game/[gameId]` estructurada como una página web vertical.
 * **iOS (HIG):**
   * Se debe presentar mediante un **Sheet nativo** (`.sheet(isPresented:)`) o una transición deslizante dentro de un `NavigationStack`.
   * La cabecera del dossier debe colapsarse elegantemente al hacer scroll hacia arriba (efecto de barra de navegación colapsable nativa).

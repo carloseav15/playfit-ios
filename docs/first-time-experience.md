@@ -1,6 +1,6 @@
 # Playfit iOS — First-Time Experience & Calibration Flow
 
-Este documento detalla la experiencia del usuario cuando ingresa a Playfit por primera vez a través del flujo de `/play`. El objetivo principal de este flujo no es construir una biblioteca o catálogo de juegos completa, sino responder con la mayor precisión posible a la pregunta: **¿A qué debería jugar a continuación?**
+Este documento detalla la experiencia del usuario cuando ingresa a Playfit por primera vez a través del flujo del producto. El objetivo principal de este flujo no es construir una biblioteca o catálogo de juegos completa, sino responder con la mayor precisión posible a la pregunta: **¿A qué debería jugar a continuación?**
 
 ## 1. Filosofía del Flujo
 El flujo de primer contacto debe ser rápido, sin fricción (no requiere inicio de sesión) y estructurado bajo el principio de calibración progresiva.
@@ -34,7 +34,7 @@ graph TD
 ## 3. Detalle Paso a Paso de la Calibración
 
 ### Paso A: Pantalla de Bienvenida (Launcher / Welcome)
-* **Objetivo:** Comunicar la promesa de valor de `/play` inmediatamente.
+* **Objetivo:** Comunicar la promesa de valor del producto inmediatamente.
 * **Mensaje Clave:** *"Elige tus plataformas, 3 juegos que amaste y 1 que no funcionó. Obtén tu siguiente juego recomendado."*
 * **Implementación iOS:**
   * Una tarjeta de bienvenida elegante en el centro de la pantalla utilizando la estética nativa (translucidez del fondo).
@@ -63,7 +63,7 @@ graph TD
 
 ---
 
-## 4. Pantalla Principal: Decision Surface (`/play`)
+## 4. Pantalla Principal: Decision Surface (`/`)
 Una vez completada la calibración inicial, la app almacena el perfil del dispositivo y abre directamente en esta interfaz en las siguientes sesiones.
 
 ### A. La Recomendación Principal ("Play this next")
