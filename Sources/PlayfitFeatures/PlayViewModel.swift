@@ -14,7 +14,8 @@ public enum PlayfitSyncState: Equatable, Sendable {
 }
 
 @Observable
-public final class PlayViewModel: @unchecked Sendable {
+@MainActor
+public final class PlayViewModel {
     public var pool: [RankedRecommendation]
     public var pickRecommendations: [RankedRecommendation]
     public var stablePrimaryId: String?
@@ -540,24 +541,6 @@ public final class PlayViewModel: @unchecked Sendable {
         resetAllLocalState()
     }
 
-    @MainActor
-    public func forceSyncCloud() async {
-        guard let apiClient else { return }
-        isLoading = true
-        syncState = .syncing
-        error = nil
-        do {
-            try await apiClient.saveProfile(profile: self.profile, gameStates: self.gameStates, onboarding: buildOnboardingPayload())
-            await syncIfOnline()
-            showToast("Cloud sync completed", style: .success)
-        } catch {
-            self.error = error.localizedDescription
-            self.syncState = .failed
-            showToast("Sync failed: \(error.localizedDescription)", style: .error)
-        }
-        isLoading = false
-    }
-
     // MARK: - Sync
 
     private func saveGameStateOrQueue(gameId: String, state: UserGameState) {
@@ -706,11 +689,15 @@ public final class PlayViewModel: @unchecked Sendable {
 // MARK: - Environment
 
 private struct PlayViewModelKey: EnvironmentKey {
-    static let defaultValue = PlayViewModel()
+    static var defaultValue: PlayViewModel {
+        MainActor.assumeIsolated {
+            PlayViewModel()
+        }
+    }
 }
 
 extension EnvironmentValues {
-    public var playViewModel: PlayViewModel {
+    @MainActor public var playViewModel: PlayViewModel {
         get { self[PlayViewModelKey.self] }
         set { self[PlayViewModelKey.self] = newValue }
     }

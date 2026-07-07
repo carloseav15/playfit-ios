@@ -273,13 +273,6 @@ public func watchOutLabel(_ score: Int) -> String {
     return "Clear read"
 }
 
-public func primaryReason(for entry: RankedRecommendation) -> String {
-    if entry.riskScore >= highFrictionThreshold, let caution = entry.cautionReasons.first {
-        return caution
-    }
-    return entry.fitReasons.first ?? "Rate a few more games to strengthen this signal."
-}
-
 public func recommendationGroupTitle(for entries: [RankedRecommendation]) -> String {
     if entries.allSatisfy({ $0.confidence == .low }) {
         return "First reads"

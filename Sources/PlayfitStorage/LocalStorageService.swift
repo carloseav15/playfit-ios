@@ -156,14 +156,6 @@ public final class LocalStorageService: Sendable {
         try? context.save()
     }
 
-    public func clearCachedRecommendations() {
-        let context = newContext()
-        let descriptor = FetchDescriptor<SDCachedRecommendation>()
-        guard let results = try? context.fetch(descriptor) else { return }
-        for sd in results { context.delete(sd) }
-        try? context.save()
-    }
-
     // MARK: - Pending Actions
 
     public func enqueuePendingAction(gameId: String, actionType: String, payload: Data) {

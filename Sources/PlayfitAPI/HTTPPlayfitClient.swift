@@ -1,13 +1,12 @@
 import Foundation
 import PlayfitModels
 
-public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
+public actor HTTPPlayfitClient: PlayfitAPIClient {
     private let baseURL: URL
     private let session: URLSession
     private let deviceID: String
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
-    private let authLock = NSLock()
     private var authSession: AuthSession?
     private var refreshTask: Task<AuthSession, Error>?
 
@@ -19,11 +18,15 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
         self.encoder = JSONEncoder()
     }
 
-    public func setAuthSession(_ session: AuthSession?) {
-        authLock.withLock {
-            self.authSession = session
-            self.refreshTask = nil
+    nonisolated public func setAuthSession(_ session: AuthSession?) {
+        Task {
+            await self.updateAuthSession(session)
         }
+    }
+
+    private func updateAuthSession(_ session: AuthSession?) {
+        self.authSession = session
+        self.refreshTask = nil
     }
 
     // MARK: - PlayfitAPIClient
@@ -290,46 +293,38 @@ public final class HTTPPlayfitClient: PlayfitAPIClient, @unchecked Sendable {
     // MARK: - Helpers
 
     private func makeRequest(url: URL) async throws -> URLRequest {
-        if let current = authLock.withLock({ authSession }), current.expires(within: 60) {
-            let task = authLock.withLock { () -> Task<AuthSession, Error> in
-                if let refreshTask { return refreshTask }
+        if let current = authSession, current.expires(within: 60) {
+            let task: Task<AuthSession, Error>
+            if let existing = refreshTask {
+                task = existing
+            } else {
                 let newTask = Task { try await self.refreshSession(current) }
                 refreshTask = newTask
-                return newTask
+                task = newTask
             }
             do {
                 let refreshed = try await task.value
-                let applied = authLock.withLock { () -> Bool in
-                    if authSession?.refreshToken == current.refreshToken {
-                        authSession = refreshed
-                        refreshTask = nil
-                        return true
-                    }
+                if authSession?.refreshToken == current.refreshToken {
+                    authSession = refreshed
                     refreshTask = nil
-                    return false
-                }
-                if applied {
                     AuthSessionStore.save(refreshed)
+                } else {
+                    refreshTask = nil
                 }
             } catch {
-                let cleared = authLock.withLock { () -> Bool in
-                    guard authSession?.refreshToken == current.refreshToken else {
-                        refreshTask = nil
-                        return false
-                    }
+                if authSession?.refreshToken == current.refreshToken {
                     authSession = nil
                     refreshTask = nil
-                    return true
-                }
-                if cleared {
                     AuthSessionStore.clear()
+                } else {
+                    refreshTask = nil
                 }
                 throw error
             }
         }
 
         var request = URLRequest(url: url)
-        if let token = authLock.withLock({ authSession?.accessToken }) {
+        if let token = authSession?.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         return request

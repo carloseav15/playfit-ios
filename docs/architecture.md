@@ -18,6 +18,18 @@ Stable mock data used to design UI before network and auth are introduced.
 
 Reusable SwiftUI surfaces: spacing, glass-style cards, cover placeholders, score badges, and token rows. This is where future Liquid Glass wrappers should live.
 
+`PlayfitLogic`
+
+Domain rules shared by native features: recommendation and profile logic that mirrors the web product's `@playfit/core` package.
+
+`PlayfitAPI`
+
+Network client for the product backend: HTTP client, auth session handling (including Supabase auth), device identity, and typed API errors.
+
+`PlayfitStorage`
+
+Local persistence via SwiftData: cached recommendations, saved picks, per-game user state, and pending offline actions.
+
 `PlayfitFeatures`
 
 User-facing screens:
@@ -31,24 +43,10 @@ User-facing screens:
 
 ## Data Direction
 
-Phase 1 uses mock data only.
+`PlayfitMocks` still backs early UI work, but `PlayfitAPI` and `PlayfitStorage` are implemented and wired into `PlayfitFeatures`:
 
-Phase 2 should introduce API clients that consume the product backend:
-
-- `GET /api/recommendations/today`
-- `GET /api/profile`
-- `PATCH /api/profile/games/:gameId`
-- `GET /api/recommendations/picks`
-- `GET /api/games`
-- `POST /api/games/batch`
-
-Phase 3 should add SwiftData:
-
-- cached recommendations
-- saved picks
-- user game states
-- pending offline actions
-- last successful sync timestamp
+- `PlayfitAPI` consumes the product backend (recommendations, profile, games, auth) over HTTP.
+- `PlayfitStorage` persists cached recommendations, saved picks, user game states, and pending offline actions via SwiftData.
 
 ## Design Direction
 

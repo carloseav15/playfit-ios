@@ -796,7 +796,9 @@ private struct CustomizePlatformsView: View {
         case "nintendo": "Nintendo"
         case "playstation": "PlayStation"
         case "xbox": "Xbox"
+        case "sega": "SEGA"
         case "pc": "PC"
+        case "other": "Other"
         default: family.capitalized
         }
     }

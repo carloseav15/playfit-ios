@@ -2,7 +2,11 @@
 
 **Public portfolio project.** Native iOS showcase for the [Playfit](https://github.com/carloseav15/playfit) product experience.
 
-This repo is a subordinate/portfolio implementation of the Playfit mobile product vision. The main project ecosystem lives at [github.com/carloseav15/playfit](https://github.com/carloseav15/playfit).
+Playfit recommends games based on what you actually like, not what's popular. This repo is the
+native iOS showcase of that product; full product context lives at
+[github.com/carloseav15/playfit](https://github.com/carloseav15/playfit).
+
+This repo is a subordinate/portfolio implementation of the Playfit mobile product vision.
 
 This folder intentionally starts as a Swift Package, not an Xcode project. The goal is to keep the first pass reviewable from the terminal, then create the Xcode app target once signing, bundle id, app icons, and simulator validation are ready.
 

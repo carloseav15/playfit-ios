@@ -23,7 +23,7 @@ public struct OnboardingPayload: Codable, Sendable {
     }
 }
 
-public protocol PlayfitAPIClient: AnyObject, Sendable {
+public protocol PlayfitAPIClient: Sendable {
     func fetchPlayNext() async throws -> PlayNextModel
     func fetchPicks() async throws -> [RankedRecommendation]
     func fetchProfile() async throws -> UserProfile?

@@ -78,7 +78,7 @@ public struct TasteView: View {
 
                 // Onboarding Calibration Warning
                 if viewModel.onboardingLikedGameIds.count < 3 || viewModel.onboardingDislikedGameIds.isEmpty {
-                    Text("Add at least 3 liked games and 1 missed game to refine your recommendations.")
+                    Text("Select a few more favorite games so we can sharpen your recommendations.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(12)

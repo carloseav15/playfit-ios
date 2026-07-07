@@ -199,24 +199,3 @@ public struct DecisionLabelBadge: View {
     }
 }
 
-public struct TokenRow: View {
-    private let values: [String]
-
-    public init(_ values: [String]) {
-        self.values = values
-    }
-
-    public var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PlayfitSpacing.xs) {
-                ForEach(values, id: \.self) { value in
-                    Text(value)
-                        .font(.caption.weight(.medium))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.thinMaterial, in: Capsule())
-                }
-            }
-        }
-    }
-}

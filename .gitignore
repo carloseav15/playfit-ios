@@ -12,6 +12,7 @@ DerivedData/
 # Build outputs
 build/
 build_dir/
+build_device/
 
 # OS noise
 .DS_Store

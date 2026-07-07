@@ -231,7 +231,7 @@ public struct GameDetailView: View {
     @MainActor
     private func loadGame() async {
         guard let apiClient = viewModel.apiClient else {
-            if entry == nil { loadError = "No backend connection is configured." }
+            if entry == nil { loadError = "The catalog connection failed. Please try again." }
             isLoading = false
             return
         }
