@@ -135,7 +135,6 @@ public enum PlayStatus: String, Codable, CaseIterable, Hashable, Sendable {
 public struct UserGameState: Hashable, Sendable {
     public var status: PlayStatus?
     public var rating: Double?
-    public var isPicked: Bool
     public var inWishlist: Bool
     public var inBacklog: Bool
     public var inPlayfitPicks: Bool
@@ -147,7 +146,6 @@ public struct UserGameState: Hashable, Sendable {
     public init(
         status: PlayStatus? = nil,
         rating: Double? = nil,
-        isPicked: Bool = false,
         inWishlist: Bool = false,
         inBacklog: Bool = false,
         inPlayfitPicks: Bool = false,
@@ -158,7 +156,6 @@ public struct UserGameState: Hashable, Sendable {
     ) {
         self.status = status
         self.rating = rating
-        self.isPicked = isPicked
         self.inWishlist = inWishlist
         self.inBacklog = inBacklog
         self.inPlayfitPicks = inPlayfitPicks
@@ -195,7 +192,6 @@ extension UserGameState: Codable {
         self.source = try container.decodeIfPresent(String.self, forKey: .source) ?? "manual"
         self.createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
         self.updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt) ?? ""
-        self.isPicked = false
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -239,5 +235,4 @@ public struct Platform: Codable, Identifiable, Hashable, Sendable {
         self.sortOrder = sortOrder
     }
 }
-
 
