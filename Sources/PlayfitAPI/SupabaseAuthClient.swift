@@ -58,7 +58,8 @@ public final class SupabaseAuthClient: NSObject {
 
     public func signIn(email: String, password: String) async throws -> AuthSession {
         var request = try makeRequest(path: "/auth/v1/token", body: ["email": email, "password": password])
-        guard var components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false) else {
+        guard let requestURL = request.url,
+              var components = URLComponents(url: requestURL, resolvingAgainstBaseURL: false) else {
             throw AuthError.invalidURL
         }
         components.queryItems = [URLQueryItem(name: "grant_type", value: "password")]
