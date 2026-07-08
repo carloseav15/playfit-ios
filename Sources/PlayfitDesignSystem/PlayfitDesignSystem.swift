@@ -199,3 +199,52 @@ public struct DecisionLabelBadge: View {
     }
 }
 
+public struct PlayfitGlowBackground: View {
+    private let primaryOpacity: Double
+    private let secondaryOpacity: Double
+    private let compact: Bool
+
+    public init(primaryOpacity: Double = 0.12, secondaryOpacity: Double = 0.08) {
+        self.primaryOpacity = primaryOpacity
+        self.secondaryOpacity = secondaryOpacity
+        self.compact = false
+    }
+
+    private init(compact: Bool) {
+        self.primaryOpacity = 0
+        self.secondaryOpacity = 0
+        self.compact = compact
+    }
+
+    public static var compact: PlayfitGlowBackground {
+        PlayfitGlowBackground(compact: true)
+    }
+
+    public var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                if compact {
+                    Circle()
+                        .fill(Color.playfitAccent.opacity(0.12))
+                        .frame(width: 260, height: 260)
+                        .blur(radius: 60)
+                        .position(x: geometry.size.width - 50, y: 80)
+                } else {
+                    Circle()
+                        .fill(Color.playfitAccent.opacity(primaryOpacity))
+                        .frame(width: 320, height: 320)
+                        .blur(radius: 80)
+                        .position(x: geometry.size.width - 50, y: 100)
+
+                    Circle()
+                        .fill(Color.playfitToneAccent.opacity(secondaryOpacity))
+                        .frame(width: 280, height: 280)
+                        .blur(radius: 70)
+                        .position(x: 50, y: geometry.size.height - 150)
+                }
+            }
+            .ignoresSafeArea()
+        }
+    }
+}
+

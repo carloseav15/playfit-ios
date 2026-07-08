@@ -76,16 +76,16 @@ Para que los componentes del producto se sientan nativos y mantengan la estétic
   * Mostrar un placeholder elegante con un degradado en escala de grises y un icono de mando de consola (`gamecontroller.fill`) en el centro mientras la portada carga de forma asíncrona (`AsyncImage`).
 
 ### D. Dossier de Detalles del Juego
-* **Web:** Ruta `/game/[gameId]` estructurada como una página web vertical.
-* **iOS (HIG):**
-  * Se debe presentar mediante un **Sheet nativo** (`.sheet(isPresented:)`) o una transición deslizante dentro de un `NavigationStack`.
-  * La cabecera del dossier debe colapsarse elegantemente al hacer scroll hacia arriba (efecto de barra de navegación colapsable nativa).
+Ver `play-route-mapping.md` para el mapeo de ruta (`/game/[gameId]` → `GameDetailView.swift`) y el
+contrato de producto de esa pantalla. Este documento solo cubre la traducción visual: presentar
+mediante un **Sheet nativo** (`.sheet(isPresented:)`) o transición dentro de un `NavigationStack`,
+con la cabecera colapsándose elegantemente al hacer scroll hacia arriba.
 
 ---
 
 ## 3. URLs y Entornos de Conexión (Supabase & Google Auth)
 
-Dado que la app nativa pasará de datos mockeados (Fase 1) a una conexión directa con el backend y autenticación (Fase 2 y 3), se detallan las URLs del sistema:
+La app nativa ya tiene conexión directa con el backend y autenticación implementadas (`PlayfitAPI`, `PlayfitStorage`, ver `architecture.md`); se detallan las URLs del sistema para cada entorno:
 
 ### A. Entorno de Desarrollo (Local)
 * **Next.js Web / API Local:** `http://127.0.0.1:3000`

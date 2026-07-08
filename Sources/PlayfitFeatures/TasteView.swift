@@ -29,7 +29,7 @@ public struct TasteView: View {
         ZStack {
             Color.playfitBackground.ignoresSafeArea()
 
-            glowBackground
+            PlayfitGlowBackground(primaryOpacity: 0.10, secondaryOpacity: 0.06)
 
             VStack(spacing: 0) {
                 Picker("Taste Sections", selection: $activeTab) {
@@ -211,24 +211,6 @@ public struct TasteView: View {
         }
     }
 
-    private var glowBackground: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Circle()
-                    .fill(Color.playfitAccent.opacity(0.10))
-                    .frame(width: 320, height: 320)
-                    .blur(radius: 80)
-                    .position(x: geometry.size.width - 50, y: 100)
-
-                Circle()
-                    .fill(Color.playfitToneAccent.opacity(0.06))
-                    .frame(width: 280, height: 280)
-                    .blur(radius: 70)
-                    .position(x: 50, y: geometry.size.height - 150)
-            }
-            .ignoresSafeArea()
-        }
-    }
 }
 
 private struct TasteTraitsListView: View {
