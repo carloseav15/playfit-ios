@@ -20,12 +20,14 @@ struct TodayEmptyState: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(.playfitAccent)
+            .accessibilityLabel("Add Platforms")
             .sheet(isPresented: $showPlatformsSheet) {
                 NavigationStack {
                     PlatformSelectionView()
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
                                 Button("Done") { showPlatformsSheet = false }
+                                    .accessibilityLabel("Done")
                             }
                         }
                 }
@@ -40,6 +42,7 @@ struct TodayEmptyState: View {
                     Task { await viewModel.showSkippedAgain() }
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel("Show skipped again")
             }
         }
         .frame(maxWidth: .infinity)

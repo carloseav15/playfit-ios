@@ -136,7 +136,7 @@ public struct SettingsView: View {
                                 .font(.caption.bold())
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 12)
                                 .background(Color.playfitAccent, in: RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
@@ -147,12 +147,12 @@ public struct SettingsView: View {
                     HStack(spacing: PlayfitSpacing.md) {
                         Image(systemName: "icloud.and.arrow.up.fill")
                             .font(.subheadline)
-                            .foregroundColor(.green)
+                            .foregroundColor(.playfitPositive)
                             .frame(width: 36, height: 36)
-                            .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                            .background(Color.playfitPositive.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.green.opacity(0.24), lineWidth: 1)
+                                    .stroke(Color.playfitPositive.opacity(0.24), lineWidth: 1)
                             )
                         
                         VStack(alignment: .leading, spacing: 2) {
@@ -179,7 +179,7 @@ public struct SettingsView: View {
                                 .font(.caption.bold())
                                 .foregroundColor(.primary)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 12)
                                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)

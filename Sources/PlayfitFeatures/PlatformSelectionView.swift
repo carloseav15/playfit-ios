@@ -231,7 +231,7 @@ struct PlatformSelectionView: View {
                         .font(.title3)
                 }
             }
-            .padding(.vertical, 10)
+            .padding(.vertical, 14)
             .padding(.horizontal, 12)
             .background(
                 isSelected ? Color.playfitAccent.opacity(0.06) : Color.clear,

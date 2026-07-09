@@ -33,9 +33,10 @@ struct OnboardingLikedGamesStep: View {
                         Text("Back")
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(.bordered)
+                    .accessibilityLabel("Back")
 
                     Button {
                         onContinue()
@@ -43,10 +44,11 @@ struct OnboardingLikedGamesStep: View {
                         Text("Continue")
                             .font(.headline.weight(.bold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(likedGames.count < 3)
+                    .accessibilityLabel("Continue")
                 }
             }
             .padding(PlayfitSpacing.md)

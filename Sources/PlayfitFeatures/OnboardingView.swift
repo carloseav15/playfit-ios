@@ -84,6 +84,7 @@ public struct OnboardingView: View {
                 .background(.ultraThinMaterial, in: Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Change appearance")
     }
 
     private var appearanceModeIcon: String {

@@ -121,7 +121,7 @@ public struct TasteMapVisualizerView: View {
                                         Circle()
                                             .fill(nodeColor(node.type))
                                             .frame(width: isSelected ? 14 : 12)
-                                            .overlay(Circle().stroke(Color.white, lineWidth: 1.2))
+                                            .overlay(Circle().stroke(Color.playfitBackground, lineWidth: 1.2))
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -135,7 +135,7 @@ public struct TasteMapVisualizerView: View {
                     }
                 }
                 .aspectRatio(1.0, contentMode: .fit)
-                .background(Color.white.opacity(0.01), in: RoundedRectangle(cornerRadius: 24))
+                .background(Color.primary.opacity(0.01), in: RoundedRectangle(cornerRadius: 24))
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.primary.opacity(0.05), lineWidth: 1))
                 .padding(.horizontal)
                 

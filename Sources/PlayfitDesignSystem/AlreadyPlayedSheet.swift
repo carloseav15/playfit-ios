@@ -3,6 +3,7 @@ import SwiftUI
 
 public struct AlreadyPlayedSheet: View {
     let onSelect: (AlreadyPlayedFeedback) -> Void
+    @State private var decisionHapticTrigger = false
 
     public init(onSelect: @escaping (AlreadyPlayedFeedback) -> Void) {
         self.onSelect = onSelect
@@ -34,11 +35,13 @@ public struct AlreadyPlayedSheet: View {
         }
         .padding(24)
         .presentationDetents([.medium, .large])
+        .sensoryFeedback(.impact(weight: .medium), trigger: decisionHapticTrigger)
     }
 
     private func optionButton(_ label: String, icon: String, color: Color, feedback: AlreadyPlayedFeedback) -> some View {
         Button {
             onSelect(feedback)
+            decisionHapticTrigger.toggle()
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: icon)

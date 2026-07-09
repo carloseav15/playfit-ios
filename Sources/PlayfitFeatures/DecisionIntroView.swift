@@ -182,12 +182,12 @@ public struct DecisionIntroView: View {
                 reasonRow(
                     label: "Why it matches",
                     value: "High action affinity",
-                    dotColor: .green
+                    dotColor: .playfitPositive
                 )
                 reasonRow(
                     label: "Watch-outs",
                     value: "Repetitive run loops",
-                    dotColor: .orange
+                    dotColor: .playfitWarning
                 )
                 reasonRow(
                     label: "Confidence",
@@ -273,6 +273,7 @@ public struct DecisionIntroView: View {
                 .background(.regularMaterial, in: Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Change appearance")
     }
 
     private var appearanceModeIcon: String {

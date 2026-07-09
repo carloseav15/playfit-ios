@@ -5,6 +5,7 @@ struct ChangeSignalSheet: View {
     let title: String
     let onSelect: (String) -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var decisionHapticTrigger = false
 
     var body: some View {
         ZStack {
@@ -45,11 +46,13 @@ struct ChangeSignalSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .sensoryFeedback(.impact(weight: .medium), trigger: decisionHapticTrigger)
     }
 
     private func optionRow(label: String, sub: String, icon: String, color: Color, val: String) -> some View {
         Button {
             onSelect(val)
+            decisionHapticTrigger.toggle()
             dismiss()
         } label: {
             HStack(spacing: PlayfitSpacing.md) {

@@ -14,6 +14,7 @@ public struct GameDetailView: View {
     @State private var isNotFound = false
     @State private var loadError: String?
     @State private var showAlreadyPlayed = false
+    @State private var decisionHapticTrigger = false
 
     public init(entry: RankedRecommendation) {
         self.gameId = entry.game.id
@@ -60,6 +61,7 @@ public struct GameDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .sensoryFeedback(.impact(weight: .medium), trigger: decisionHapticTrigger)
         .safeAreaInset(edge: .bottom) {
             if let entry { dossierActions(entry) }
         }
@@ -216,7 +218,10 @@ public struct GameDetailView: View {
             .accessibilityLabel("Mark \(entry.game.title) as Already Played")
             .tint(.playfitPositive)
 
-            Button { viewModel.notForMe(entry) } label: {
+            Button {
+                viewModel.notForMe(entry)
+                decisionHapticTrigger.toggle()
+            } label: {
                 Label("Not for me", systemImage: "xmark.circle")
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)

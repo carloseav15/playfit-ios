@@ -79,6 +79,7 @@ struct EmailAuthFormView: View {
             }
             .buttonStyle(.plain)
             .disabled(isLoading)
+            .accessibilityLabel(primaryButtonTitle)
 
             if let onResetPassword {
                 Button(action: onResetPassword) {
@@ -87,9 +88,12 @@ struct EmailAuthFormView: View {
                         .foregroundColor(.secondary)
                         .underline()
                         .padding(.top, 2)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
+                .accessibilityLabel("Forgot password?")
             }
 
             Button(action: onSwitchMode) {
@@ -98,8 +102,11 @@ struct EmailAuthFormView: View {
                     .foregroundColor(.secondary)
                     .underline()
                     .padding(.top, 4)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(switchModeTitle)
         }
     }
 

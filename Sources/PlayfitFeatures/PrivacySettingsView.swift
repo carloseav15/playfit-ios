@@ -66,7 +66,7 @@ struct PrivacySettingsView: View {
                                     .padding(.vertical, 8)
                                     .frame(minHeight: 44)
                                     .contentShape(Rectangle())
-                                    .background(Color.red, in: RoundedRectangle(cornerRadius: 12))
+                                    .background(Color.playfitNegative, in: RoundedRectangle(cornerRadius: 12))
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Confirm Reset")
@@ -156,7 +156,7 @@ struct PrivacySettingsView: View {
                                     .padding(.vertical, 8)
                                     .frame(minHeight: 44)
                                     .contentShape(Rectangle())
-                                    .background(Color.red, in: RoundedRectangle(cornerRadius: 12))
+                                    .background(Color.playfitNegative, in: RoundedRectangle(cornerRadius: 12))
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Confirm Delete")

@@ -72,18 +72,20 @@ struct OnboardingDislikedGameStep: View {
                         Text("Back")
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(.bordered)
+                    .accessibilityLabel("Back")
 
                     Button(action: onComplete) {
                         Text("Find Play Next")
                             .font(.headline.weight(.bold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(dislikedGame == nil)
+                    .accessibilityLabel("Find Play Next")
                 }
             }
             .padding(PlayfitSpacing.md)

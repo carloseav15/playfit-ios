@@ -42,6 +42,7 @@ struct CustomizePlatformsView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(allSelected ? "Deselect all platforms" : "Select all platforms")
                 }
 
                 let families: [String] = {
@@ -99,6 +100,7 @@ struct CustomizePlatformsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                        .accessibilityLabel("Done")
                 }
             }
         }

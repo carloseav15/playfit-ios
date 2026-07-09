@@ -11,6 +11,7 @@ struct PrimaryRecommendationCard: View {
     @Binding var selectedEntry: RankedRecommendation?
     @Binding var showReasonPicker: Bool
     @Binding var showAlreadyPlayed: Bool
+    @State private var decisionHapticTrigger = false
 
     var body: some View {
         PlayfitGlassCard {
@@ -25,6 +26,7 @@ struct PrimaryRecommendationCard: View {
                 skipButton
             }
         }
+        .sensoryFeedback(.impact(weight: .medium), trigger: decisionHapticTrigger)
         .sheet(isPresented: $showAlreadyPlayed) {
             if let entry = selectedEntry ?? viewModel.primary {
                 AlreadyPlayedSheet { feedback in
@@ -151,6 +153,7 @@ struct PrimaryRecommendationCard: View {
             Button {
                 viewModel.notForMe(entry)
                 showReasonPicker = true
+                decisionHapticTrigger.toggle()
             } label: {
                 Label("No, skip this", systemImage: "forward")
                     .font(.subheadline.weight(.semibold))
@@ -167,6 +170,7 @@ struct PrimaryRecommendationCard: View {
     private var skipButton: some View {
         Button {
             viewModel.skip(entry)
+            decisionHapticTrigger.toggle()
         } label: {
             Text("Show me another option")
                 .font(.subheadline.weight(.medium))

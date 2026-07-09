@@ -36,6 +36,7 @@ struct OnboardingPlatformsStep: View {
                             .foregroundColor(.playfitAccent)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Customize Platforms")
 
                     Button {
                         onContinue()
@@ -43,10 +44,11 @@ struct OnboardingPlatformsStep: View {
                         Text(selectedPlatformIds.isEmpty ? "Select at least one system" : "Continue")
                             .font(.headline.weight(.bold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 12)
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(selectedPlatformIds.isEmpty)
+                    .accessibilityLabel(selectedPlatformIds.isEmpty ? "Select at least one system" : "Continue")
                 }
             }
             .padding(PlayfitSpacing.md)

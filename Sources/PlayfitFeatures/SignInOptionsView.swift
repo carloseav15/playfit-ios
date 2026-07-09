@@ -20,7 +20,7 @@ struct SignInOptionsView: View {
                         googleLogo
                         Text("Continue with Google")
                             .font(.subheadline.bold())
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .accessibilityIgnoresInvertColors(true)
                     }
                     Spacer()
@@ -43,7 +43,7 @@ struct SignInOptionsView: View {
                         .foregroundColor(.playfitAccent)
                     Text("Continue with Email")
                         .font(.subheadline.bold())
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .accessibilityIgnoresInvertColors(true)
                     Spacer()
                 }
