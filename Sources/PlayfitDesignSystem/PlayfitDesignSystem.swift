@@ -37,9 +37,19 @@ public struct PlayfitGlassCard<Content: View>: View {
 private actor CoverImageLoader {
     static let shared = CoverImageLoader()
     private let memoryCache = NSCache<NSURL, NSData>()
+    private let urlSession: URLSession
 
     private init() {
         memoryCache.totalCostLimit = 64 * 1_024 * 1_024
+        let config = URLSessionConfiguration.default
+        let cache = URLCache(
+            memoryCapacity: 20 * 1024 * 1024,
+            diskCapacity: 100 * 1024 * 1024,
+            diskPath: "cover_images_cache"
+        )
+        config.urlCache = cache
+        config.requestCachePolicy = .returnCacheDataElseLoad
+        self.urlSession = URLSession(configuration: config)
     }
 
     func data(for url: URL) async throws -> Data {
@@ -50,7 +60,7 @@ private actor CoverImageLoader {
         var request = URLRequest(url: url)
         request.cachePolicy = .returnCacheDataElseLoad
         request.timeoutInterval = 20
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
         guard let response = response as? HTTPURLResponse,
               (200...299).contains(response.statusCode),
               !data.isEmpty else {
@@ -63,7 +73,7 @@ private actor CoverImageLoader {
 
 public struct PlayfitGameCover: View {
     // The fixed portrait box every cover renders into (matches web's `aspect-[2/3]`-ish crop).
-    private static let boxRatio: CGFloat = 0.72
+    private static let boxRatio: CGFloat = 0.75
 
     private let game: Game
     private let baseURL: URL
@@ -80,23 +90,23 @@ public struct PlayfitGameCover: View {
 
     public var body: some View {
         ZStack {
+            if image == nil {
+                if didFail || game.resolvedCoverURL(baseURL: baseURL) == nil {
+                    coverFallback
+                } else {
+                    Rectangle().fill(.quaternary)
+                    ProgressView().tint(.secondary)
+                }
+            }
+
             if let image {
-                // Covers vary wildly in shape (portrait box art, square logos,
-                // widescreen screenshots), so the image always fits inside the
-                // fixed box instead of being cropped — nothing gets cut off.
-                backdrop
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-            } else if didFail || game.resolvedCoverURL(baseURL: baseURL) == nil {
-                coverFallback
-            } else {
-                Rectangle().fill(.quaternary)
-                ProgressView().tint(.secondary)
             }
         }
-        .aspectRatio(Self.boxRatio, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .aspectRatio(image != nil ? nil : Self.boxRatio, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Cover art for \(game.title)")
@@ -107,7 +117,7 @@ public struct PlayfitGameCover: View {
 
     private var backdrop: some View {
         LinearGradient(
-            colors: [.indigo, .purple, .black],
+            colors: [Color.playfitIndigo, Color.playfitAccent, Color.black],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -155,7 +165,7 @@ public struct ScoreBadge: View {
     public var body: some View {
         Text("\(Int((score * 100).rounded()))% fit")
             .font(.caption.weight(.semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(Color.playfitInkForeground)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Color.playfitInk, in: Capsule())
@@ -244,6 +254,7 @@ public struct PlayfitGlowBackground: View {
                 }
             }
             .ignoresSafeArea()
+            .accessibilityHidden(true)
         }
     }
 }

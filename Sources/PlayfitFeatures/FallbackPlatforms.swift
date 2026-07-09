@@ -15,6 +15,11 @@ extension PlayViewModel {
         Platform(platformId: "wii", displayName: "Nintendo Wii", family: "nintendo", kind: "console", sortOrder: 7),
         Platform(platformId: "ps2", displayName: "PlayStation 2", family: "playstation", kind: "console", sortOrder: 6),
         Platform(platformId: "ps3", displayName: "PlayStation 3", family: "playstation", kind: "console", sortOrder: 7),
-        Platform(platformId: "xbox_360", displayName: "Xbox 360", family: "xbox", kind: "console", sortOrder: 7)
+        Platform(platformId: "xbox_360", displayName: "Xbox 360", family: "xbox", kind: "console", sortOrder: 7),
+        Platform(platformId: "sega_genesis", displayName: "SEGA Genesis", family: "sega", kind: "console", sortOrder: 5),
+        Platform(platformId: "game_boy_advance", displayName: "Game Boy Advance", family: "nintendo", kind: "handheld", sortOrder: 3),
+        Platform(platformId: "ds", displayName: "Nintendo DS", family: "nintendo", kind: "handheld", sortOrder: 6),
+        Platform(platformId: "psp", displayName: "PlayStation Portable", family: "playstation", kind: "handheld", sortOrder: 5),
+        Platform(platformId: "ps_vita", displayName: "PlayStation Vita", family: "playstation", kind: "handheld", sortOrder: 4),
     ]
 }

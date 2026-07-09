@@ -21,6 +21,7 @@ struct SignInOptionsView: View {
                         Text("Continue with Google")
                             .font(.subheadline.bold())
                             .foregroundColor(.white)
+                            .accessibilityIgnoresInvertColors(true)
                     }
                     Spacer()
                 }
@@ -33,6 +34,7 @@ struct SignInOptionsView: View {
             }
             .buttonStyle(.plain)
             .disabled(isLoading)
+            .accessibilityLabel("Continue with Google")
 
             Button(action: onEmail) {
                 HStack(spacing: PlayfitSpacing.sm) {
@@ -42,6 +44,7 @@ struct SignInOptionsView: View {
                     Text("Continue with Email")
                         .font(.subheadline.bold())
                         .foregroundColor(.white)
+                        .accessibilityIgnoresInvertColors(true)
                     Spacer()
                 }
                 .padding(.vertical, 14)
@@ -53,6 +56,7 @@ struct SignInOptionsView: View {
             }
             .buttonStyle(.plain)
             .disabled(isLoading)
+            .accessibilityLabel("Continue with Email")
 
             Button(action: onGuest) {
                 HStack {
@@ -67,6 +71,7 @@ struct SignInOptionsView: View {
             }
             .buttonStyle(.plain)
             .disabled(isLoading)
+            .accessibilityLabel("Continue as Guest")
 
             Button(action: onSignUp) {
                 Text("New to Playfit? Create account")
@@ -76,13 +81,14 @@ struct SignInOptionsView: View {
                     .padding(.top, 12)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("New to Playfit? Create account")
         }
     }
 
     private var googleLogo: some View {
         HStack(spacing: 0) {
             Text("G")
-                .font(.system(size: 16, weight: .black, design: .rounded))
+                .font(.body.weight(.black))
                 .foregroundStyle(
                     LinearGradient(
                         colors: [.red, .yellow, .green, .blue],
@@ -93,5 +99,6 @@ struct SignInOptionsView: View {
         }
         .frame(width: 22, height: 22)
         .background(.white, in: Circle())
+        .accessibilityHidden(true)
     }
 }

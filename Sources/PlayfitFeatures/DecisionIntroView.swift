@@ -3,8 +3,9 @@ import PlayfitModels
 import SwiftUI
 
 public struct DecisionIntroView: View {
-    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+    @AppStorage(StorageKeys.appearanceMode) private var appearanceMode: AppearanceMode = .system
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let onStart: () -> Void
     let onSignIn: () -> Void
@@ -35,7 +36,7 @@ public struct DecisionIntroView: View {
         VStack(alignment: .leading, spacing: PlayfitSpacing.lg) {
             HStack {
                 HStack(spacing: PlayfitSpacing.sm) {
-                    Image("playfit_logo", bundle: Bundle.main)
+                    Image("playfit_logo")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 48, height: 48)
@@ -45,6 +46,7 @@ public struct DecisionIntroView: View {
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                         )
+                        .accessibilityLabel("Playfit logo")
 
                     Text("Playfit")
                         .font(.caption.weight(.black))
@@ -66,14 +68,14 @@ public struct DecisionIntroView: View {
                         .font(.largeTitle.weight(.black))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color.playfitAccent, Color.pink],
+                                colors: [Color.playfitAccent, Color.playfitIndigo],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
                 )
-                .tracking(-0.5)
-                .lineSpacing(-2)
+                .accessibilityIgnoresInvertColors(true)
+                .tracking(dynamicTypeSize <= .xxLarge ? -0.5 : 0)
 
                 Text("Select your platforms, three favorites, and one notable miss. Get one clear recommendation with its complete decision analysis.")
                     .font(.subheadline)
@@ -152,7 +154,7 @@ public struct DecisionIntroView: View {
                     game: Game(
                         id: "hades",
                         title: "Hades",
-                        coverPath: "/covers/games/hades.jpg"
+                        coverURL: URL(string: "https://vhhnwjuwqbspvllvppnn.supabase.co/storage/v1/object/public/game-covers/hades.jpg")
                     )
                 )
                     .frame(width: 72)
@@ -222,6 +224,8 @@ public struct DecisionIntroView: View {
                     lineWidth: 1
                 )
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Preview recommendation: Hades, 94 percent fit, high action affinity, repetitive run loops, confidence high")
     }
 
     private func reasonRow(label: String, value: String?, dotColor: Color, badge: String? = nil) -> some View {

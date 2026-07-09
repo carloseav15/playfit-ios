@@ -7,6 +7,7 @@ public struct TasteMapVisualizerView: View {
     @Environment(\.playViewModel) private var viewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var activeNodeId: String?
+    @State private var nodes: [GameNode] = []
     
     public init() {}
     
@@ -23,7 +24,6 @@ public struct TasteMapVisualizerView: View {
     }
     
     public var body: some View {
-        let nodes = getNodes()
         let activeNode = nodes.first { $0.id == activeNodeId } ?? nodes.first
         
         ZStack {
@@ -78,25 +78,27 @@ public struct TasteMapVisualizerView: View {
                             }
                             .foregroundColor(.secondary.opacity(0.7))
                             .padding(24)
-                            .dynamicTypeSize(...DynamicTypeSize.large)
+                            // Absolutely positioned inside a fixed square canvas, so an
+                            // uncapped size can overlap plotted nodes at the largest AX sizes.
+                            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                             .accessibilityHidden(true)
                             
                             // Axis Directions
                             Text("Demanding →").font(.caption2.bold())
                                 .position(x: size - 45, y: center - 10)
-                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                 .accessibilityHidden(true)
                             Text("← Cozy").font(.caption2.bold())
                                 .position(x: 40, y: center - 10)
-                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                 .accessibilityHidden(true)
                             Text("Systems ↑").font(.caption2.bold())
                                 .position(x: center - 35, y: 35)
-                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                 .accessibilityHidden(true)
                             Text("Story ↓").font(.caption2.bold())
                                 .position(x: center - 25, y: size - 35)
-                                .dynamicTypeSize(...DynamicTypeSize.large)
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                 .accessibilityHidden(true)
                             
                             // Plot Nodes
@@ -114,11 +116,11 @@ public struct TasteMapVisualizerView: View {
                                         Circle().fill(Color.clear).frame(width: 44, height: 44)
                                         Circle()
                                             .fill(nodeColor(node.type).opacity(isSelected ? 0.35 : 0.15))
-                                            .frame(width: isSelected ? 24 : 16)
+                                            .frame(width: isSelected ? 28 : 20)
                                             .animation(reduceMotion ? nil : .spring(response: 0.3), value: isSelected)
                                         Circle()
                                             .fill(nodeColor(node.type))
-                                            .frame(width: isSelected ? 10 : 8)
+                                            .frame(width: isSelected ? 14 : 12)
                                             .overlay(Circle().stroke(Color.white, lineWidth: 1.2))
                                     }
                                 }
@@ -170,6 +172,12 @@ public struct TasteMapVisualizerView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .task(id: viewModel.gameStates) {
+            nodes = getNodes()
+        }
+        .task(id: viewModel.gamesCache) {
+            nodes = getNodes()
+        }
     }
     
     private static let terminalStatuses: Set<PlayStatus> = [.beaten, .completed, .abandoned, .dropped]

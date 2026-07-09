@@ -53,5 +53,6 @@ public struct AlreadyPlayedSheet: View {
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(label): \(feedback.rawValue)")
     }
 }

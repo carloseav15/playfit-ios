@@ -16,7 +16,6 @@ struct OnboardingGameSearchSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: PlayfitSpacing.md) {
-                searchField
                 searchContent
                 Spacer()
             }
@@ -30,22 +29,20 @@ struct OnboardingGameSearchSheet: View {
                     Button("Cancel", action: onCancel)
                 }
             }
+            .searchable(text: $searchQuery, prompt: "Search games...")
+            .searchSuggestions {
+                if searchQuery.isEmpty {
+                    ForEach(suggestions, id: \.self) { title in
+                        Button(title) {
+                            searchQuery = title
+                        }
+                    }
+                }
+            }
             .onChange(of: searchQuery) { _, newValue in
                 onQueryChange(newValue)
             }
         }
-    }
-
-    private var searchField: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search games...", text: $searchQuery)
-                .textFieldStyle(.plain)
-                .autocorrectionDisabled()
-        }
-        .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
     @ViewBuilder
@@ -80,10 +77,11 @@ struct OnboardingGameSearchSheet: View {
                         Image(systemName: "plus.circle")
                             .foregroundColor(.playfitAccent)
                     }
-                    .padding(PlayfitSpacing.sm)
+                    .padding(14)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(title)
             }
         }
     }
@@ -105,17 +103,25 @@ struct OnboardingGameSearchSheet: View {
                                     .foregroundStyle(.primary)
                                     .lineLimit(1)
 
-                                HStack(spacing: 4) {
-                                    if !formatDisplayGenre(game.primaryGenre).isEmpty {
-                                        Text(formatDisplayGenre(game.primaryGenre))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    if isValidReleaseYear(game.releaseYear) {
-                                        Text("• \(game.releaseYear ?? "")")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                if !formatDisplayGenre(game.primaryGenre).isEmpty || isValidReleaseYear(game.releaseYear) || !game.availablePlatformNames.isEmpty {
+                                    let metadataParts: [String] = {
+                                        var parts: [String] = []
+                                        let genre = formatDisplayGenre(game.primaryGenre)
+                                        if !genre.isEmpty { parts.append(genre) }
+                                        if isValidReleaseYear(game.releaseYear) {
+                                            parts.append(game.releaseYear ?? "")
+                                        }
+                                        if !game.availablePlatformNames.isEmpty {
+                                            let names = game.availablePlatformNames.prefix(3).joined(separator: ", ")
+                                            let suffix = game.availablePlatformNames.count > 3 ? "..." : ""
+                                            parts.append(names + suffix)
+                                        }
+                                        return parts
+                                    }()
+
+                                    Text(metadataParts.joined(separator: " • "))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
 
@@ -124,13 +130,16 @@ struct OnboardingGameSearchSheet: View {
                             Image(systemName: "plus.circle")
                                 .foregroundColor(.playfitAccent)
                         }
+                        .frame(minHeight: 44)
                         .padding(PlayfitSpacing.sm)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(game.title)
                 }
             }
         }
+        .scrollDismissesKeyboard(.immediately)
     }
 
     private func searchStatus(icon: String?, text: String) -> some View {

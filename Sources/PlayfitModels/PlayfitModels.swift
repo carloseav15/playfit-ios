@@ -236,3 +236,7 @@ public struct Platform: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+public enum StorageKeys {
+    public static let appearanceMode = "appearanceMode"
+    public static let authEmail = "authEmail"
+}

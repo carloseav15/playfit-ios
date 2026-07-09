@@ -203,15 +203,17 @@ public struct GameDetailView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .accessibilityLabel(viewModel.isPicked(entry.game.id) ? "Remove from Picks" : "Save to Picks")
 
             Button { showAlreadyPlayed = true } label: {
-                Label("Already played", systemImage: "checkmark.circle")
+                Label("Already Played", systemImage: "checkmark.circle")
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Mark \(entry.game.title) as Already Played")
             .tint(.playfitPositive)
 
             Button { viewModel.notForMe(entry) } label: {
@@ -222,6 +224,7 @@ public struct GameDetailView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Mark \(entry.game.title) as Not For Me")
             .tint(.playfitNegative)
         }
         .padding(PlayfitSpacing.md)
@@ -261,7 +264,7 @@ public struct GameDetailView: View {
                 )
             }
         } catch {
-            loadError = error.localizedDescription
+            loadError = "Could not load game details. Please try again."
         }
         isLoading = false
     }

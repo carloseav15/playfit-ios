@@ -16,9 +16,10 @@ struct DeveloperSettingsView: View {
                         Text(env.label).tag(env)
                     }
                 } label: {
-                    EmptyView()
+                    Text("Backend Environment")
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("Backend Environment Selection")
                 .onChange(of: activeEnv) { _, newValue in
                     PlayfitAPI.activeEnvironment = newValue
                     viewModel.apiClient = HTTPPlayfitClient()

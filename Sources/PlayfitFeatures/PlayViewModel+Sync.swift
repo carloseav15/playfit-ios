@@ -99,7 +99,7 @@ extension PlayViewModel {
             self.lastSyncedAt = Date()
             self.syncState = .synced
         } catch {
-            self.error = error.localizedDescription
+            self.error = "Unable to sync. Changes will be saved locally."
             self.syncState = .failed
         }
         isLoading = false
@@ -128,6 +128,7 @@ extension PlayViewModel {
     @MainActor
     public func load() async {
         loadLocal()
+        await signInAnonymouslyIfNeeded()
         if let apiClient {
             if let fetched = try? await apiClient.fetchPlatforms(), !fetched.isEmpty {
                 self.platforms = fetched
@@ -162,7 +163,7 @@ extension PlayViewModel {
             self.lastSyncedAt = Date()
             self.syncState = .synced
         } catch {
-            self.error = error.localizedDescription
+            self.error = "Unable to sync. Changes will be saved locally."
             self.syncState = .failed
         }
         isLoading = false
@@ -276,7 +277,7 @@ extension PlayViewModel {
             }
             rebuildProfileFromCurrentSignals()
         } catch {
-            self.error = error.localizedDescription
+            self.error = "Unable to sync. Changes will be saved locally."
         }
         isLoading = false
     }

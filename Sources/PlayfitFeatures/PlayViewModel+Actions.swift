@@ -56,9 +56,16 @@ extension PlayViewModel {
         showToast("Skipped")
     }
 
-    public func clearSkipped() {
+    /// Restores skipped games immediately (guaranteed non-empty), then asks
+    /// the server for fresh candidates too — otherwise this button just
+    /// re-serves the exact same dead-end pool with no network activity, and
+    /// swiping through it again loops back to the identical empty state
+    /// forever.
+    @MainActor
+    public func showSkippedAgain() async {
         excludedIds = []
         showToast("Skipped games shown again")
+        await refresh()
     }
 
     public func clearError() {
@@ -154,6 +161,7 @@ extension PlayViewModel {
     public func showToast(_ message: String, style: ToastStyle = .success) {
         toastMessage = message
         toastStyle = style
+        toastToken += 1
     }
 
     func advancePast(_ gameId: String) {

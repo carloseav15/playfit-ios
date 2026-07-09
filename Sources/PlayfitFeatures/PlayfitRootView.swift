@@ -7,12 +7,13 @@ import SwiftUI
 
 public struct PlayfitRootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
-    @AppStorage("authEmail") private var authEmail: String = ""
+    @AppStorage(StorageKeys.appearanceMode) private var appearanceMode: AppearanceMode = .system
+    @AppStorage(StorageKeys.authEmail) private var authEmail: String = ""
     @State private var viewModel: PlayViewModel
     @State private var showOnboarding = false
     @State private var showSignInSheet = false
     @State private var isReady = false
+    @SceneStorage("selectedTab") private var selectedTab: Int = 0
     @State private var showSplash = !ProcessInfo.processInfo.arguments.contains {
         $0.hasPrefix("-playfit-ui-testing")
     }
@@ -36,6 +37,9 @@ public struct PlayfitRootView: View {
             }
         }
         .preferredColorScheme(appearanceMode.colorScheme)
+        .sensoryFeedback(.success, trigger: viewModel.pickIds.count)
+        .sensoryFeedback(.impact(weight: .medium), trigger: viewModel.excludedIds.count)
+        .sensoryFeedback(.success, trigger: viewModel.onboardingCompleted)
     }
 
     private var mainContent: some View {
@@ -97,7 +101,10 @@ public struct PlayfitRootView: View {
             }
         }
         .accessibilityIdentifier("playfit.root")
-        .statusToast(message: $viewModel.toastMessage, style: viewModel.toastStyle)
+        .statusToast(message: $viewModel.toastMessage, token: $viewModel.toastToken, style: viewModel.toastStyle)
+        .onOpenURL { url in
+            print("Playfit received deep link: \(url)")
+        }
         .task {
             // Deterministic, offline states for UI tests: "-seeded" reaches the main
             // tab bar (with an empty pool/picks) without a network round-trip; plain
@@ -151,13 +158,14 @@ public struct PlayfitRootView: View {
     }
 
     private var mainTabView: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 TodayView()
             }
             .tabItem {
                 Label("Play Next", systemImage: "safari")
             }
+            .tag(0)
 
             NavigationStack {
                 PicksView()
@@ -166,6 +174,7 @@ public struct PlayfitRootView: View {
                 Label("Picks", systemImage: "bookmark")
             }
             .badge(viewModel.picks.count)
+            .tag(1)
 
             NavigationStack {
                 TasteView()
@@ -173,6 +182,7 @@ public struct PlayfitRootView: View {
             .tabItem {
                 Label("Taste", systemImage: "slider.horizontal.3")
             }
+            .tag(2)
 
             NavigationStack {
                 SettingsView()
@@ -180,6 +190,7 @@ public struct PlayfitRootView: View {
             .tabItem {
                 Label("Settings", systemImage: "gearshape")
             }
+            .tag(3)
         }
         .accessibilityIdentifier("playfit.main.tabs")
         .safeAreaInset(edge: .top, spacing: 0) {

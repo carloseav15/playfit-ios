@@ -56,6 +56,15 @@ public final class SupabaseAuthClient: NSObject {
         return nil
     }
 
+    /// Mirrors the web's `supabase.auth.signInAnonymously()`: GoTrue's signup endpoint
+    /// issues a session for an anonymous user when no credentials are supplied.
+    public func signInAnonymously() async throws -> AuthSession {
+        let request = try makeRequest(path: "/auth/v1/signup", body: [:])
+        let data = try await execute(request)
+        let token = try JSONDecoder().decode(TokenResponse.self, from: data)
+        return token.session
+    }
+
     public func signIn(email: String, password: String) async throws -> AuthSession {
         var request = try makeRequest(path: "/auth/v1/token", body: ["email": email, "password": password])
         guard let requestURL = request.url,

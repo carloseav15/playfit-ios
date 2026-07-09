@@ -42,5 +42,6 @@ struct CompactRecommendationRow: View {
                     .foregroundStyle(.tertiary)
             }
         }
+        .accessibilityLabel("\(entry.game.title), \(entry.affinityScore) percent match")
     }
 }

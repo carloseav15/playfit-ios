@@ -32,9 +32,10 @@ public struct FeedbackReasonPicker: View {
             Text(reason)
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .frame(minHeight: 44)
                 .background(.thinMaterial, in: Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(reason)
     }
 }

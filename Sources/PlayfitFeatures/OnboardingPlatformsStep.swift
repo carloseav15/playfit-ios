@@ -114,6 +114,7 @@ struct OnboardingPlatformsStep: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(preset.label): \(preset.description)")
             }
         }
     }

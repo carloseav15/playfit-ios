@@ -25,7 +25,7 @@ struct SplashView: View {
                 .opacity(glowOpacity)
 
             VStack(spacing: PlayfitSpacing.md) {
-                Image("playfit_logo", bundle: Bundle.main)
+                Image("playfit_logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 120, height: 120)

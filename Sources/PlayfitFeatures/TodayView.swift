@@ -35,6 +35,8 @@ public struct TodayView: View {
                             showReasonPicker: $showReasonPicker,
                             showAlreadyPlayed: $showAlreadyPlayed
                         )
+                        .id(primary.game.id)
+                        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
                         header
 
                         if !viewModel.alternatives.isEmpty {
@@ -98,6 +100,7 @@ public struct TodayView: View {
                 Task { await viewModel.syncIfOnline() }
             }
             .buttonStyle(.borderedProminent)
+            .accessibilityLabel("Try reloading recommendations")
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)
@@ -119,6 +122,7 @@ public struct TodayView: View {
                     CompactRecommendationRow(entry: entry)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("View details for \(entry.game.title)")
             }
         }
     }

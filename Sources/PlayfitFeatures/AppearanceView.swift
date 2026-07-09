@@ -73,6 +73,7 @@ struct AppearanceView: View {
                                     )
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("\(mode.label) theme")
                             }
                         }
                         .padding(4)

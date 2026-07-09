@@ -5,8 +5,8 @@ import PlayfitStorage
 import SwiftUI
 
 public struct SettingsView: View {
-    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
-    @AppStorage("authEmail") private var authEmail: String = ""
+    @AppStorage(StorageKeys.appearanceMode) private var appearanceMode: AppearanceMode = .system
+    @AppStorage(StorageKeys.authEmail) private var authEmail: String = ""
     @Environment(\.playViewModel) private var viewModel
     @State private var showSignInSheet = false
 
@@ -15,8 +15,6 @@ public struct SettingsView: View {
     public var body: some View {
         ZStack {
             Color.playfitBackground.ignoresSafeArea()
-            
-            PlayfitGlowBackground()
             
             List {
             Section {
@@ -44,6 +42,7 @@ public struct SettingsView: View {
                         }
                     }
                 }
+                .accessibilityLabel("App Appearance, Theme: \(appearanceMode.label)")
 
                 NavigationLink {
                     PlatformSelectionView()
@@ -69,6 +68,7 @@ public struct SettingsView: View {
                         }
                     }
                 }
+                .accessibilityLabel("Your Platforms, \(viewModel.selectedPlatformIds.count) systems selected")
 
                 NavigationLink {
                     PrivacySettingsView()
@@ -94,6 +94,7 @@ public struct SettingsView: View {
                         }
                     }
                 }
+                .accessibilityLabel("Data and Privacy Settings")
             } header: {
                 Text("General")
                     .textCase(.uppercase)
@@ -139,6 +140,7 @@ public struct SettingsView: View {
                                 .background(Color.playfitAccent, in: RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Sign In or Synchronize")
                         .padding(.top, 4)
                     }
                 } else {
@@ -185,6 +187,7 @@ public struct SettingsView: View {
                                 )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Sign Out")
                         .padding(.top, 4)
                     }
                 }
@@ -220,6 +223,7 @@ public struct SettingsView: View {
                         }
                     }
                 }
+                .accessibilityLabel("Developer Settings, Environment: \(PlayfitAPI.activeEnvironment.label)")
             } header: {
                 Text("Developer")
                     .textCase(.uppercase)

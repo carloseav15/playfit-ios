@@ -60,6 +60,7 @@ struct OnboardingDislikedGameStep: View {
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Add a game that was not for you")
                 }
 
                 Spacer(minLength: 24)

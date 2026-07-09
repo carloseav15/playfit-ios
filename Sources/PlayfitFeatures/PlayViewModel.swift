@@ -28,6 +28,7 @@ public final class PlayViewModel {
     public internal(set) var lastSyncedAt: Date?
     public var toastMessage: String?
     public var toastStyle: ToastStyle = .success
+    public var toastToken: Int = 0
     public var onboardingStarted: Bool
     public var onboardingCompleted: Bool
     public var selectedPlatformIds: Set<String>

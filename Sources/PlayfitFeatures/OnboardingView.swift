@@ -9,7 +9,7 @@ enum OnboardingSearchTarget: Equatable {
 
 public struct OnboardingView: View {
     @Environment(\.playViewModel) private var viewModel
-    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+    @AppStorage(StorageKeys.appearanceMode) private var appearanceMode: AppearanceMode = .system
     @State private var step = 0
     @State private var selectedPlatformIds: Set<String> = []
     @State private var likedGames: [Game] = []
@@ -180,7 +180,7 @@ public struct OnboardingView: View {
             } catch {
                 guard !Task.isCancelled, query == searchQuery else { return }
                 await MainActor.run {
-                    searchError = error.localizedDescription
+                    searchError = "Something went wrong. Please try again."
                     isSearching = false
                 }
             }

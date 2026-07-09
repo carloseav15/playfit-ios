@@ -27,6 +27,18 @@ extension PlayViewModel {
         return true
     }
 
+    /// Ensures a guest has a valid Supabase session before any sync call fires,
+    /// mirroring the web's `signInAnonymously()` bootstrap. Failures are swallowed
+    /// (offline, etc.) so callers can proceed with the existing offline-tolerant paths.
+    @MainActor
+    func signInAnonymouslyIfNeeded() async {
+        guard authSession == nil else { return }
+        let client = SupabaseAuthClient()
+        guard let newSession = try? await client.signInAnonymously() else { return }
+        authSession = newSession
+        AuthSessionStore.save(newSession)
+    }
+
     @MainActor
     public func resetPassword(email: String) async throws {
         let client = SupabaseAuthClient()

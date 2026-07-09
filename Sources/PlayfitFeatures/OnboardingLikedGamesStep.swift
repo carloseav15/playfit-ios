@@ -96,6 +96,7 @@ struct OnboardingLikedGamesStep: View {
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Add a loved game")
             }
         }
     }

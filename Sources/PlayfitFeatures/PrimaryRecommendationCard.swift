@@ -74,6 +74,7 @@ struct PrimaryRecommendationCard: View {
                     .font(.caption.weight(.medium))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("See analysis for \(entry.game.title)")
             .foregroundStyle(Color.playfitAccent)
         }
     }
@@ -95,7 +96,7 @@ struct PrimaryRecommendationCard: View {
             viewModel.addPick(entry)
         } label: {
             Label(
-                viewModel.isPicked(entry.game.id) ? "Saved to Picks" : "Add to Playfit Picks",
+                viewModel.isPicked(entry.game.id) ? "Saved to Picks" : "Save to Picks",
                 systemImage: viewModel.isPicked(entry.game.id) ? "bookmark.fill" : "bookmark"
             )
             .font(.subheadline.weight(.semibold))
@@ -114,6 +115,7 @@ struct PrimaryRecommendationCard: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(viewModel.isPicked(entry.game.id) ? "Saved to Picks" : "Save to Picks")
         .disabled(viewModel.isPicked(entry.game.id))
     }
 
@@ -143,6 +145,7 @@ struct PrimaryRecommendationCard: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Mark \(entry.game.title) as Already Played")
             .tint(.playfitPositive)
 
             Button {
@@ -156,6 +159,7 @@ struct PrimaryRecommendationCard: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Mark \(entry.game.title) as Not For Me")
             .tint(.playfitNegative)
         }
     }
@@ -169,6 +173,7 @@ struct PrimaryRecommendationCard: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Show me another option instead of \(entry.game.title)")
         .foregroundStyle(.secondary)
     }
 }

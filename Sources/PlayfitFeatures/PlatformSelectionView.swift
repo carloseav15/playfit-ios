@@ -77,6 +77,7 @@ struct PlatformSelectionView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("\(preset.label): \(preset.description)")
                         }
                     }
                     
@@ -238,6 +239,7 @@ struct PlatformSelectionView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(platform.displayName): \(isSelected ? "selected" : "not selected")")
     }
 
     private var platformsToDisplay: [Platform] {

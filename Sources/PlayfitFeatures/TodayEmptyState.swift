@@ -37,7 +37,7 @@ struct TodayEmptyState: View {
                     .padding(10)
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
                 Button("Show skipped again") {
-                    viewModel.clearSkipped()
+                    Task { await viewModel.showSkippedAgain() }
                 }
                 .buttonStyle(.bordered)
             }

@@ -36,7 +36,7 @@ struct TodayLoadingState: View {
                         VStack(alignment: .leading, spacing: PlayfitSpacing.sm) {
                             RoundedRectangle(cornerRadius: 24)
                                 .fill(.quaternary)
-                                .aspectRatio(0.72, contentMode: .fit)
+                                .aspectRatio(0.75, contentMode: .fit)
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(.quaternary)
                                 .frame(height: 20)
@@ -53,6 +53,7 @@ struct TodayLoadingState: View {
                 }
             }
             .redacted(reason: .placeholder)
+            .accessibilityHidden(true)
         }
     }
 }

@@ -82,5 +82,6 @@ struct ChangeSignalSheet: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(label): \(sub)")
     }
 }

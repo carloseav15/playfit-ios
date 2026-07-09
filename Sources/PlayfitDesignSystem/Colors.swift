@@ -17,6 +17,10 @@ extension Color {
     public static let playfitNegative = dynamicColor(lightHex: "#be123c", darkHex: "#fb7185")
     public static let playfitToneAccent = dynamicColor(lightHex: "#0369a1", darkHex: "#7dd3fc")
     public static let playfitIndigo = dynamicColor(lightHex: "#4f46e5", darkHex: "#4f46e5")
+
+    /// Fixed dark navy (not scheme-dependent) for text on top of playfitInk,
+    /// which is light-to-mid toned in both light and dark mode.
+    public static let playfitInkForeground = dynamicColor(lightHex: "#0f172a", darkHex: "#0f172a")
 }
 
 extension Color {

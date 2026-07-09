@@ -24,8 +24,13 @@ struct EmailAuthFormView: View {
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
                         #endif
+                        .submitLabel(.next)
+                        .onSubmit(onSubmit)
+                        .accessibilityLabel("Email address")
                         .padding(12)
+                        .frame(minHeight: 44)
                         .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
@@ -39,7 +44,14 @@ struct EmailAuthFormView: View {
 
                     SecureField("••••••••", text: $passwordInput)
                         .textFieldStyle(.plain)
+                        #if os(iOS)
+                        .textContentType(mode == .signUp ? .newPassword : .password)
+                        #endif
+                        .submitLabel(.go)
+                        .onSubmit(onSubmit)
+                        .accessibilityLabel("Password")
                         .padding(12)
+                        .frame(minHeight: 44)
                         .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)

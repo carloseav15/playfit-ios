@@ -1,4 +1,5 @@
 import PlayfitDesignSystem
+import PlayfitModels
 import PlayfitStorage
 import SwiftUI
 
@@ -6,7 +7,7 @@ import SwiftUI
 
 struct PrivacySettingsView: View {
     @Environment(\.playViewModel) private var viewModel
-    @AppStorage("authEmail") private var authEmail: String = ""
+    @AppStorage(StorageKeys.authEmail) private var authEmail: String = ""
     @State private var confirmReset = false
     @State private var confirmDelete = false
     @State private var actionPending = false
@@ -14,8 +15,6 @@ struct PrivacySettingsView: View {
     var body: some View {
         ZStack {
             Color.playfitBackground.ignoresSafeArea()
-            
-            PlayfitGlowBackground()
             
             List {
                 Section {
@@ -38,7 +37,10 @@ struct PrivacySettingsView: View {
                                 Button(role: .destructive) {
                                     withAnimation {
                                         actionPending = true
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    }
+                                    Task {
+                                        try? await Task.sleep(for: .seconds(1))
+                                        withAnimation {
                                             actionPending = false
                                             confirmReset = false
                                             viewModel.selectedPlatformIds.removeAll()
@@ -67,6 +69,7 @@ struct PrivacySettingsView: View {
                                     .background(Color.red, in: RoundedRectangle(cornerRadius: 12))
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Confirm Reset")
                                 .disabled(actionPending)
                                 
                                 Button {
@@ -100,6 +103,7 @@ struct PrivacySettingsView: View {
                                         )
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Reset Profile")
                             }
                         }
                         .padding(.top, 4)
@@ -132,7 +136,7 @@ struct PrivacySettingsView: View {
                                         } catch {
                                             await MainActor.run {
                                                 actionPending = false
-                                                viewModel.showToast("Delete failed: \(error.localizedDescription)", style: .error)
+                                                viewModel.showToast("Operation failed. Please try again later.", style: .error)
                                             }
                                         }
                                     }
@@ -155,6 +159,7 @@ struct PrivacySettingsView: View {
                                     .background(Color.red, in: RoundedRectangle(cornerRadius: 12))
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Confirm Delete")
                                 .disabled(actionPending)
                                 
                                 Button {
@@ -188,6 +193,7 @@ struct PrivacySettingsView: View {
                                         )
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Delete Cloud Profile")
                             }
                         }
                         .padding(.top, 4)

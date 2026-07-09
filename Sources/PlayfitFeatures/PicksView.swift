@@ -157,7 +157,7 @@ private struct ManagePickSheet: View {
 
                 VStack(spacing: PlayfitSpacing.sm) {
                     optionRow(
-                        label: "Already Played It",
+                        label: "Already Played",
                         icon: "checkmark.circle.fill",
                         color: .playfitPositive
                     ) {

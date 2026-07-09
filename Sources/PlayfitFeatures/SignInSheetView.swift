@@ -63,6 +63,7 @@ struct SignInSheetView: View {
                     }
                     .padding(PlayfitSpacing.md)
                 }
+                .scrollDismissesKeyboard(.immediately)
             }
             .navigationTitle(navTitleForView)
             #if os(iOS)
@@ -123,7 +124,7 @@ struct SignInSheetView: View {
                 isLoading = false
             } catch {
                 isLoading = false
-                viewModel.showToast("Google sign-in failed: \(error.localizedDescription)", style: .error)
+                viewModel.showToast("Sign in failed. Please check your credentials and try again.", style: .error)
             }
         }
     }
@@ -146,7 +147,7 @@ struct SignInSheetView: View {
                 dismiss()
             } catch {
                 isLoading = false
-                viewModel.showToast("Sign in failed: \(error.localizedDescription)", style: .error)
+                viewModel.showToast("Sign in failed. Please check your credentials and try again.", style: .error)
             }
         }
     }
@@ -174,7 +175,7 @@ struct SignInSheetView: View {
                 }
             } catch {
                 isLoading = false
-                viewModel.showToast("Sign up failed: \(error.localizedDescription)", style: .error)
+                viewModel.showToast("Sign in failed. Please check your credentials and try again.", style: .error)
             }
         }
     }
