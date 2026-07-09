@@ -1,3 +1,4 @@
+import Foundation
 import PlayfitAPI
 import PlayfitStorage
 
@@ -43,6 +44,43 @@ extension PlayViewModel {
     public func resetPassword(email: String) async throws {
         let client = SupabaseAuthClient()
         try await client.resetPasswordForEmail(email)
+    }
+
+    /// Handles `playfit://auth-callback` deep links: Google sign-in adopts the
+    /// session immediately, while a password-recovery link holds its session in
+    /// `pendingPasswordRecovery` so ResetPasswordView can gate on it without
+    /// treating the user as fully signed in until they set a new password.
+    @MainActor
+    public func handleAuthCallback(url: URL) {
+        guard url.scheme == "playfit", url.host == "auth-callback" else { return }
+        guard let result = try? SupabaseAuthClient.parseCallbackURL(url) else { return }
+
+        if result.isPasswordRecovery {
+            pendingPasswordRecovery = result.session
+        } else {
+            authSession = result.session
+            AuthSessionStore.save(result.session)
+            Task { await adoptServerAccountState() }
+        }
+    }
+
+    @MainActor
+    public func updatePassword(_ newPassword: String) async throws {
+        guard let recoverySession = pendingPasswordRecovery else {
+            throw AuthError.unexpectedResponse
+        }
+        let client = SupabaseAuthClient()
+        try await client.updatePassword(accessToken: recoverySession.accessToken, newPassword: newPassword)
+        authSession = recoverySession
+        AuthSessionStore.save(recoverySession)
+        pendingPasswordRecovery = nil
+        await adoptServerAccountState()
+        showToast("Password updated", style: .success)
+    }
+
+    @MainActor
+    public func dismissPasswordRecovery() {
+        pendingPasswordRecovery = nil
     }
 
     @MainActor

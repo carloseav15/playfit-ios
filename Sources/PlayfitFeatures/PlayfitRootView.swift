@@ -103,7 +103,16 @@ public struct PlayfitRootView: View {
         .accessibilityIdentifier("playfit.root")
         .statusToast(message: $viewModel.toastMessage, token: $viewModel.toastToken, style: viewModel.toastStyle)
         .onOpenURL { url in
-            print("Playfit received deep link: \(url)")
+            viewModel.handleAuthCallback(url: url)
+        }
+        .sheet(isPresented: Binding(
+            get: { viewModel.pendingPasswordRecovery != nil },
+            set: { isPresented in
+                if !isPresented { viewModel.dismissPasswordRecovery() }
+            }
+        )) {
+            ResetPasswordView()
+                .environment(\.playViewModel, viewModel)
         }
         .task {
             // Deterministic, offline states for UI tests: "-seeded" reaches the main

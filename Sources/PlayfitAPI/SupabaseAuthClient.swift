@@ -80,10 +80,41 @@ public final class SupabaseAuthClient: NSObject {
 
     /// Mirrors the web's `supabase.auth.resetPasswordForEmail`: always succeeds from the
     /// caller's perspective so the UI can show a neutral message regardless of whether the
-    /// email is registered.
-    public func resetPasswordForEmail(_ email: String) async throws {
-        let request = try makeRequest(path: "/auth/v1/recover", body: ["email": email])
+    /// email is registered. `redirect_to` points the email link back at this app so
+    /// `playfit://auth-callback` reaches `PlayfitRootView`'s `.onOpenURL`.
+    public func resetPasswordForEmail(_ email: String, redirectScheme: String = "playfit") async throws {
+        var request = try makeRequest(path: "/auth/v1/recover", body: ["email": email])
+        guard let requestURL = request.url,
+              var components = URLComponents(url: requestURL, resolvingAgainstBaseURL: false) else {
+            throw AuthError.invalidURL
+        }
+        components.queryItems = [
+            URLQueryItem(name: "redirect_to", value: "\(redirectScheme)://auth-callback"),
+        ]
+        request.url = components.url
         _ = try await execute(request)
+    }
+
+    /// Updates the password on the account owned by `accessToken`. Used both for a
+    /// signed-in user changing their password and for a password-recovery session
+    /// (the token from a `type=recovery` deep link) setting a new one.
+    public func updatePassword(accessToken: String, newPassword: String) async throws {
+        var request = URLRequest(url: baseURL.appendingPathComponent("/auth/v1/user"))
+        request.httpMethod = "PUT"
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["password": newPassword])
+        _ = try await execute(request)
+    }
+
+    /// Parses a `playfit://auth-callback` deep link (the redirect target for both
+    /// Google sign-in and password recovery emails) into its session and whether it
+    /// represents a password-recovery link (`type=recovery` in the fragment/query).
+    public static func parseCallbackURL(_ url: URL) throws -> (session: AuthSession, isPasswordRecovery: Bool) {
+        let params = Self.callbackParams(from: url)
+        let session = try Self.session(fromCallbackParams: params)
+        return (session, params["type"] == "recovery")
     }
 
     public func signOut(accessToken: String) async {
@@ -150,19 +181,26 @@ public final class SupabaseAuthClient: NSObject {
         return data
     }
 
-    /// Supabase's OAuth authorize flow returns tokens in the redirect URL's fragment
-    /// (`#access_token=...`), not as a JSON body, and does not include the user id or
-    /// email directly — those are decoded from the JWT's own claims.
-    private static func parseImplicitSession(from url: URL) throws -> AuthSession {
+    /// Supabase's OAuth authorize and password-recovery redirects both return their
+    /// payload in the URL's fragment (`#access_token=...`), not as a JSON body.
+    private static func callbackParams(from url: URL) -> [String: String] {
         let fragment = url.fragment ?? url.query ?? ""
-        let params = fragment
+        return fragment
             .split(separator: "&")
             .reduce(into: [String: String]()) { dict, pair in
                 let parts = pair.split(separator: "=", maxSplits: 1)
                 guard parts.count == 2 else { return }
                 dict[String(parts[0])] = String(parts[1]).removingPercentEncoding ?? String(parts[1])
             }
+    }
 
+    /// Does not include the user id or email directly — those are decoded from the
+    /// access token JWT's own claims.
+    private static func parseImplicitSession(from url: URL) throws -> AuthSession {
+        try session(fromCallbackParams: callbackParams(from: url))
+    }
+
+    private static func session(fromCallbackParams params: [String: String]) throws -> AuthSession {
         if let errorDescription = params["error_description"] {
             throw AuthError.server(400, errorDescription)
         }

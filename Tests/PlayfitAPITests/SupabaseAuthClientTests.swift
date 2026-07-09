@@ -23,6 +23,65 @@ final class SupabaseAuthClientTests: XCTestCase {
         try await makeClient().resetPasswordForEmail("player@example.com")
     }
 
+    func testResetPasswordForEmailIncludesRedirectToTheAppCallback() async throws {
+        AuthURLProtocolStub.handler = { request in
+            guard let url = request.url,
+                  let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+                XCTFail("Request had no URL")
+                return (200, Data("{}".utf8))
+            }
+            var redirectTo: String?
+            for item in components.queryItems ?? [] where item.name == "redirect_to" {
+                redirectTo = item.value
+            }
+            XCTAssertEqual(redirectTo, "playfit://auth-callback")
+            return (200, Data("{}".utf8))
+        }
+
+        try await makeClient().resetPasswordForEmail("player@example.com")
+    }
+
+    func testUpdatePasswordPutsToUserEndpoint() async throws {
+        AuthURLProtocolStub.handler = { request in
+            XCTAssertEqual(request.url?.path, "/auth/v1/user")
+            XCTAssertEqual(request.httpMethod, "PUT")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer recovery-token")
+            let body = try XCTUnwrap(request.httpBodyData())
+            let payload = try JSONDecoder().decode([String: String].self, from: body)
+            XCTAssertEqual(payload["password"], "new-password-123")
+            return (200, Data("{}".utf8))
+        }
+
+        try await makeClient().updatePassword(accessToken: "recovery-token", newPassword: "new-password-123")
+    }
+
+    func testParseCallbackURLDetectsPasswordRecovery() throws {
+        let url = try XCTUnwrap(URL(
+            string: "playfit://auth-callback#access_token=\(Self.sampleJWT)&refresh_token=refresh-1&expires_in=3600&type=recovery"
+        ))
+
+        let result = try SupabaseAuthClient.parseCallbackURL(url)
+
+        XCTAssertTrue(result.isPasswordRecovery)
+        XCTAssertEqual(result.session.accessToken, Self.sampleJWT)
+        XCTAssertEqual(result.session.refreshToken, "refresh-1")
+    }
+
+    func testParseCallbackURLDoesNotFlagOrdinarySignIn() throws {
+        let url = try XCTUnwrap(URL(
+            string: "playfit://auth-callback#access_token=\(Self.sampleJWT)&refresh_token=refresh-1&expires_in=3600"
+        ))
+
+        let result = try SupabaseAuthClient.parseCallbackURL(url)
+
+        XCTAssertFalse(result.isPasswordRecovery)
+    }
+
+    /// A minimal unsigned JWT with `{"sub":"user-1","email":"player@example.com"}` as its payload,
+    /// enough for `parseCallbackURL`'s claims decoding (it never verifies the signature).
+    private static let sampleJWT =
+        "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEiLCJlbWFpbCI6InBsYXllckBleGFtcGxlLmNvbSJ9.sig"
+
     func testResetPasswordForEmailThrowsOnServerError() async {
         AuthURLProtocolStub.handler = { _ in (400, Data(#"{"msg":"Invalid email"}"#.utf8)) }
 

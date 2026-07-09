@@ -44,6 +44,11 @@ public final class PlayViewModel {
     public internal(set) var authSession: AuthSession? {
         didSet { apiClient?.setAuthSession(authSession) }
     }
+    /// Set when an incoming `playfit://auth-callback` deep link is a password-recovery
+    /// link. Its session is not adopted as the active session until the user actually
+    /// sets a new password, so the ResetPasswordView can be shown gating the rest of
+    /// the app on the recovery flow completing.
+    public internal(set) var pendingPasswordRecovery: AuthSession?
     let storage = LocalStorageService.shared
 
     public init(
