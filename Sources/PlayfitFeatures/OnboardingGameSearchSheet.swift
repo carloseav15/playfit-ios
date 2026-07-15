@@ -32,7 +32,7 @@ struct OnboardingGameSearchSheet: View {
             .searchable(text: $searchQuery, prompt: "Search games...")
             .searchSuggestions {
                 if searchQuery.isEmpty {
-                    ForEach(suggestions, id: \.self) { title in
+                    ForEach(Array(suggestions.enumerated()), id: \.offset) { _, title in
                         Button(title) {
                             searchQuery = title
                         }
@@ -66,7 +66,7 @@ struct OnboardingGameSearchSheet: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            ForEach(suggestions, id: \.self) { title in
+            ForEach(Array(suggestions.enumerated()), id: \.offset) { _, title in
                 Button {
                     searchQuery = title
                 } label: {

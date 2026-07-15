@@ -31,7 +31,7 @@ struct EmailAuthFormView: View {
                         .accessibilityLabel("Email address")
                         .padding(12)
                         .frame(minHeight: 44)
-                        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(Color.primary.opacity(0.12), lineWidth: 1)
@@ -52,7 +52,7 @@ struct EmailAuthFormView: View {
                         .accessibilityLabel("Password")
                         .padding(12)
                         .frame(minHeight: 44)
-                        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(Color.primary.opacity(0.12), lineWidth: 1)

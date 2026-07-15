@@ -6,7 +6,6 @@ import SwiftUI
 public struct TodayView: View {
     @Environment(\.playViewModel) private var viewModel
     @State private var selectedEntry: RankedRecommendation?
-    @State private var showReasonPicker = false
     @State private var showAlreadyPlayed = false
     @State private var slowLoading = false
     @State private var showPlatformsSheet = false
@@ -32,7 +31,6 @@ public struct TodayView: View {
                         PrimaryRecommendationCard(
                             entry: primary,
                             selectedEntry: $selectedEntry,
-                            showReasonPicker: $showReasonPicker,
                             showAlreadyPlayed: $showAlreadyPlayed
                         )
                         .id(primary.game.id)

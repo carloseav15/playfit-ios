@@ -53,6 +53,7 @@ struct TodayLoadingState: View {
                 }
             }
             .redacted(reason: .placeholder)
+            .shimmering()
             .accessibilityHidden(true)
         }
     }

@@ -7,6 +7,7 @@ struct OnboardingDislikedGameStep: View {
     @Binding var dislikedGame: Game?
     @Binding var searchTarget: OnboardingSearchTarget
     @Binding var showSearch: Bool
+    let isCompleting: Bool
     let onBack: () -> Void
     let onComplete: () -> Void
 
@@ -75,17 +76,26 @@ struct OnboardingDislikedGameStep: View {
                             .padding(.vertical, 12)
                     }
                     .buttonStyle(.bordered)
+                    .disabled(isCompleting)
                     .accessibilityLabel("Back")
 
                     Button(action: onComplete) {
-                        Text("Find Play Next")
-                            .font(.headline.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                        HStack {
+                            if isCompleting {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .tint(.white)
+                            } else {
+                                Text("Find Play Next")
+                                    .font(.headline.weight(.bold))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(dislikedGame == nil)
-                    .accessibilityLabel("Find Play Next")
+                    .disabled(dislikedGame == nil || isCompleting)
+                    .accessibilityLabel(isCompleting ? "Finding Play Next" : "Find Play Next")
                 }
             }
             .padding(PlayfitSpacing.md)

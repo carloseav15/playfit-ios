@@ -53,7 +53,7 @@ struct CustomizePlatformsView: View {
                     return ordered
                 }()
 
-                ForEach(families, id: \.self) { family in
+                ForEach(Array(families.enumerated()), id: \.offset) { _, family in
                     let familyPlatforms = platforms(for: family)
                     if !familyPlatforms.isEmpty {
                         Section(familyDisplayName(family)) {

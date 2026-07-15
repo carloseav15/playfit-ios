@@ -78,7 +78,7 @@ struct ChangeSignalSheet: View {
                     .foregroundColor(.secondary.opacity(0.4))
             }
             .padding(10)
-            .background(Color.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.primary.opacity(0.02), in: RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.primary.opacity(0.06), lineWidth: 1)

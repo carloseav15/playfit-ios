@@ -26,7 +26,7 @@ struct SignInOptionsView: View {
                     Spacer()
                 }
                 .padding(.vertical, 14)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.primary.opacity(0.12), lineWidth: 1)
@@ -48,7 +48,7 @@ struct SignInOptionsView: View {
                     Spacer()
                 }
                 .padding(.vertical, 14)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.primary.opacity(0.12), lineWidth: 1)

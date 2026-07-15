@@ -10,6 +10,8 @@ struct OnboardingLikedGamesStep: View {
     let onBack: () -> Void
     let onContinue: () -> Void
 
+    private let numberOfSlots = 3
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PlayfitSpacing.lg) {
@@ -20,7 +22,7 @@ struct OnboardingLikedGamesStep: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                ForEach(0..<3, id: \.self) { index in
+                ForEach(0..<numberOfSlots, id: \.self) { index in
                     likedGameSlot(index: index)
                 }
 

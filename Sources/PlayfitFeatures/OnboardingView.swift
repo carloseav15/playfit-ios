@@ -22,6 +22,7 @@ public struct OnboardingView: View {
     @State private var isSearching = false
     @State private var searchError: String?
     @State private var pendingSearchTask: Task<Void, Never>?
+    @State private var isCompletingOnboarding = false
 
     private let suggestions = ["Elden Ring", "Hades", "Hollow Knight", "Portal 2", "The Witcher 3"]
 
@@ -45,6 +46,14 @@ public struct OnboardingView: View {
             }
         }
         .foregroundStyle(Color.playfitForeground)
+        .onAppear {
+            // Default to all platforms selected (opt-out) instead of none (opt-in),
+            // matching the web/Android decision that onboarding shouldn't start
+            // from a state with zero active platforms.
+            if selectedPlatformIds.isEmpty {
+                selectedPlatformIds = Set(viewModel.platforms.map(\.platformId))
+            }
+        }
     }
 
     private var headerBar: some View {
@@ -131,6 +140,7 @@ public struct OnboardingView: View {
                     dislikedGame: $dislikedGame,
                     searchTarget: $searchTarget,
                     showSearch: $showSearch,
+                    isCompleting: isCompletingOnboarding,
                     onBack: { withAnimation { step = 1 } },
                     onComplete: completeOnboarding
                 )
@@ -214,12 +224,15 @@ public struct OnboardingView: View {
     }
 
     private func completeOnboarding() {
+        guard !isCompletingOnboarding else { return }
+        isCompletingOnboarding = true
         Task {
             await viewModel.completeOnboarding(
                 selectedPlatformIds: selectedPlatformIds,
                 likedGames: likedGames,
                 dislikedGame: dislikedGame
             )
+            isCompletingOnboarding = false
             onComplete()
         }
     }

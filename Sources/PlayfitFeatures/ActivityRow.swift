@@ -31,7 +31,7 @@ struct ActivityRow: View {
             .accessibilityLabel("Manage \(entry.title)")
         }
         .padding(12)
-        .background(Color.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.primary.opacity(0.02), in: RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)

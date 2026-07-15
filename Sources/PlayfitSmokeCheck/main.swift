@@ -74,7 +74,6 @@ precondition(vm.picks.contains { $0.game.id == "metroid_prime_remastered" }, "Ex
 precondition(vm.isPicked("metroid_prime_remastered"), "Expected Metroid isPicked")
 
 // Component instantiation checks
-_ = FeedbackReasonPicker(onSelect: { _ in })
 _ = RecommendationMetric(label: "Test", value: "Test", numericValue: 50)
 _ = FitReasonsCard(title: "Test", reasons: ["Test"], tone: DecisionTone.positive)
 

@@ -124,7 +124,7 @@ public struct GameDetailView: View {
                     if !entry.game.availablePlatformNames.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 6) {
-                                ForEach(entry.game.availablePlatformNames, id: \.self) { platform in
+                                ForEach(Array(entry.game.availablePlatformNames.enumerated()), id: \.offset) { _, platform in
                                     Text(platform)
                                         .font(.caption.weight(.medium))
                                         .padding(.horizontal, 8)

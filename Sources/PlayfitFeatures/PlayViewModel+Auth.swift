@@ -128,4 +128,16 @@ extension PlayViewModel {
         storage.deleteAllLocalData()
         resetAllLocalState()
     }
+
+    /// Deletes the remote taste profile (same DELETE used by `deleteCloudProfile()`)
+    /// but keeps the current session active, matching web/Android's "reset stays
+    /// signed in" semantics. Local state is only cleared after the remote delete
+    /// succeeds, so a failed reset leaves existing data intact.
+    @MainActor
+    public func resetTasteCloudProfile() async throws {
+        guard let apiClient else { throw APIError.unexpectedResponse }
+        try await apiClient.deleteProfile()
+        storage.deleteAllLocalData()
+        resetLocalTasteState()
+    }
 }

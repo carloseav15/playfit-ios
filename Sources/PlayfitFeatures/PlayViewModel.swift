@@ -12,6 +12,12 @@ public enum PlayfitSyncState: Equatable, Sendable {
     case offline
 }
 
+struct PendingDecisionUndo {
+    let entry: RankedRecommendation
+    let previousState: UserGameState?
+    let wasPicked: Bool
+}
+
 @Observable
 @MainActor
 public final class PlayViewModel {
@@ -29,6 +35,9 @@ public final class PlayViewModel {
     public var toastMessage: String?
     public var toastStyle: ToastStyle = .success
     public var toastToken: Int = 0
+    public var toastActionTitle: String?
+    public var toastAction: (() -> Void)?
+    var pendingUndo: PendingDecisionUndo?
     public var onboardingStarted: Bool
     public var onboardingCompleted: Bool
     public var selectedPlatformIds: Set<String>

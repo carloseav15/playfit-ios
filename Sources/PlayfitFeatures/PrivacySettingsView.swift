@@ -1,6 +1,5 @@
 import PlayfitDesignSystem
 import PlayfitModels
-import PlayfitStorage
 import SwiftUI
 
 // MARK: - Privacy Settings View
@@ -30,24 +29,30 @@ struct PrivacySettingsView: View {
                         
                         HStack(spacing: 8) {
                             if confirmReset {
-                                // Intentionally local-only: the backend's upsert_profile RPC rejects
-                                // empty-overwrite payloads (profile/route.ts), so there is no safe way
-                                // to push a "wipe taste" state to the server. The next full sync will
-                                // re-upload local state once onboarding is redone.
+                                // Deletes the remote profile via the same DELETE /api/profile
+                                // used by "Delete Cloud Profile", but keeps the session active
+                                // (no sign-out) — matches web/Android's reset semantics.
                                 Button(role: .destructive) {
                                     withAnimation {
                                         actionPending = true
                                     }
                                     Task {
-                                        try? await Task.sleep(for: .seconds(1))
-                                        withAnimation {
-                                            actionPending = false
-                                            confirmReset = false
-                                            viewModel.selectedPlatformIds.removeAll()
-                                            viewModel.onboardingStarted = false
-                                            viewModel.onboardingCompleted = false
-                                            LocalStorageService.shared.saveProfile(viewModel.profile, platformIds: [], onboardingCompleted: false)
-                                            viewModel.showToast("Profile reset completed", style: .success)
+                                        do {
+                                            try await viewModel.resetTasteCloudProfile()
+                                            await MainActor.run {
+                                                withAnimation {
+                                                    actionPending = false
+                                                    confirmReset = false
+                                                    viewModel.showToast("Profile reset completed", style: .success)
+                                                }
+                                            }
+                                        } catch {
+                                            await MainActor.run {
+                                                withAnimation {
+                                                    actionPending = false
+                                                }
+                                                viewModel.showToast("Operation failed. Please try again later.", style: .error)
+                                            }
                                         }
                                     }
                                 } label: {

@@ -101,7 +101,13 @@ public struct PlayfitRootView: View {
             }
         }
         .accessibilityIdentifier("playfit.root")
-        .statusToast(message: $viewModel.toastMessage, token: $viewModel.toastToken, style: viewModel.toastStyle)
+        .statusToast(
+            message: $viewModel.toastMessage,
+            token: $viewModel.toastToken,
+            style: viewModel.toastStyle,
+            actionTitle: $viewModel.toastActionTitle,
+            action: $viewModel.toastAction
+        )
         .onOpenURL { url in
             viewModel.handleAuthCallback(url: url)
         }

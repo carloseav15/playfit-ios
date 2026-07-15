@@ -68,7 +68,7 @@ struct PlatformSelectionView: View {
                                 .padding(12)
                                 .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
                                 .background(
-                                    isFullySelected ? Color.playfitAccent.opacity(0.08) : Color.white.opacity(0.02),
+                                    isFullySelected ? Color.playfitAccent.opacity(0.08) : Color.primary.opacity(0.02),
                                     in: RoundedRectangle(cornerRadius: 14)
                                 )
                                 .overlay(
@@ -91,7 +91,7 @@ struct PlatformSelectionView: View {
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(availableFamilies, id: \.self) { family in
+                            ForEach(Array(availableFamilies.enumerated()), id: \.offset) { _, family in
                                 let familyPlatforms = platformsToDisplay.filter { platform in
                                     if family == "other" {
                                         return !["nintendo", "playstation", "xbox", "sega", "pc"].contains(platform.family)
@@ -113,7 +113,7 @@ struct PlatformSelectionView: View {
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 8)
                                         .background(
-                                            selectedFamily == family ? Color.playfitAccent : Color.white.opacity(0.03),
+                                            selectedFamily == family ? Color.playfitAccent : Color.primary.opacity(0.03),
                                             in: RoundedRectangle(cornerRadius: 12)
                                         )
                                         .overlay(
@@ -202,6 +202,10 @@ struct PlatformSelectionView: View {
     private func platformRow(_ platform: Platform) -> some View {
         let isSelected = viewModel.selectedPlatformIds.contains(platform.platformId)
         Button {
+            if isSelected && viewModel.selectedPlatformIds.count == 1 {
+                viewModel.showToast("Keep at least one active platform.", style: .error)
+                return
+            }
             withAnimation {
                 if isSelected {
                     viewModel.selectedPlatformIds.remove(platform.platformId)
@@ -263,13 +267,18 @@ struct PlatformSelectionView: View {
     private func togglePreset(_ preset: PlatformPreset, isFullySelected: Bool) {
         let presetPlatforms = platformsToDisplay.filter(preset.match)
         let presetIds = Set(presetPlatforms.map { $0.platformId })
-        
+
         if isFullySelected {
-            viewModel.selectedPlatformIds.subtract(presetIds)
+            let remaining = viewModel.selectedPlatformIds.subtracting(presetIds)
+            guard !remaining.isEmpty else {
+                viewModel.showToast("Keep at least one active platform.", style: .error)
+                return
+            }
+            viewModel.selectedPlatformIds = remaining
         } else {
             viewModel.selectedPlatformIds.formUnion(presetIds)
         }
-        
+
         LocalStorageService.shared.saveProfile(
             viewModel.profile,
             platformIds: viewModel.selectedPlatformIds,

@@ -30,17 +30,24 @@ extension PlayViewModel {
     }
 
     public func notForMe(_ entry: RankedRecommendation) {
-        advancePast(entry.game.id)
-        gamesCache[entry.game.id] = entry.game
-        pickIds.remove(entry.game.id)
-        pickRecommendations.removeAll { $0.game.id == entry.game.id }
-        applyDecisionFeedback(gameStates: &gameStates, gameId: entry.game.id, feedback: .notForMe)
-        persistGameState(gameId: entry.game.id)
-        rebuildProfileFromCurrentSignals()
-        showToast("Skipped")
+        applyFeedbackWithUndo(entry, feedback: .notForMe)
     }
 
     public func alreadyPlayed(_ entry: RankedRecommendation, feedback: AlreadyPlayedFeedback) {
+        applyFeedbackWithUndo(entry, feedback: feedback)
+    }
+
+    /// Shared by `notForMe`/`alreadyPlayed`: both discard the current
+    /// recommendation and record permanent feedback that reshapes future
+    /// picks, so both get the same snapshot-and-offer-Undo treatment
+    /// (mirrors `applyDecisionFeedback` on web, which is likewise generic
+    /// over every `DecisionFeedback` case rather than one-off per action).
+    private func applyFeedbackWithUndo(_ entry: RankedRecommendation, feedback: DecisionFeedback) {
+        pendingUndo = PendingDecisionUndo(
+            entry: entry,
+            previousState: gameStates[entry.game.id],
+            wasPicked: pickIds.contains(entry.game.id)
+        )
         advancePast(entry.game.id)
         gamesCache[entry.game.id] = entry.game
         pickIds.remove(entry.game.id)
@@ -48,7 +55,38 @@ extension PlayViewModel {
         applyDecisionFeedback(gameStates: &gameStates, gameId: entry.game.id, feedback: feedback)
         persistGameState(gameId: entry.game.id)
         rebuildProfileFromCurrentSignals()
-        showToast("Marked as played")
+        showToast(decisionFeedbackMessage(for: feedback), actionTitle: "Undo") { [weak self] in
+            self?.undoLastDecision()
+        }
+    }
+
+    public func undoLastDecision() {
+        guard let undo = pendingUndo else { return }
+        pendingUndo = nil
+        let gameId = undo.entry.game.id
+
+        if let previousState = undo.previousState {
+            gameStates[gameId] = previousState
+            persistGameState(gameId: gameId)
+        } else {
+            gameStates.removeValue(forKey: gameId)
+            storage.deleteGameState(gameId: gameId)
+            deleteGameStateOrQueue(gameId: gameId)
+        }
+
+        if undo.wasPicked {
+            pickIds.insert(gameId)
+            var restoredEntry = undo.entry
+            restoredEntry.inPlayfitPicks = true
+            pickRecommendations.removeAll { $0.game.id == gameId }
+            pickRecommendations.insert(restoredEntry, at: 0)
+            storage.cacheRecommendations(uniqueRecommendations(pool + pickRecommendations))
+        }
+
+        excludedIds.remove(gameId)
+        stablePrimaryId = gameId
+        rebuildProfileFromCurrentSignals()
+        showToast("Undone.")
     }
 
     public func skip(_ entry: RankedRecommendation) {
@@ -73,8 +111,10 @@ extension PlayViewModel {
         if syncState == .failed { syncState = .idle }
     }
 
+    /// Clears taste/onboarding/recommendation state without touching the auth
+    /// session, so a taste reset can keep the user signed in.
     @MainActor
-    public func resetAllLocalState() {
+    public func resetLocalTasteState() {
         pool = []
         pickRecommendations = []
         gameStates = [:]
@@ -91,6 +131,11 @@ extension PlayViewModel {
         error = nil
         syncState = apiClient == nil ? .offline : .idle
         lastSyncedAt = nil
+    }
+
+    @MainActor
+    public func resetAllLocalState() {
+        resetLocalTasteState()
         authSession = nil
         AuthSessionStore.clear()
     }
@@ -158,10 +203,35 @@ extension PlayViewModel {
         showToast("Signal updated")
     }
 
-    public func showToast(_ message: String, style: ToastStyle = .success) {
+    public func showToast(
+        _ message: String,
+        style: ToastStyle = .success,
+        actionTitle: String? = nil,
+        action: (() -> Void)? = nil
+    ) {
         toastMessage = message
         toastStyle = style
+        toastActionTitle = actionTitle
+        toastAction = action
         toastToken += 1
+    }
+
+    /// Mirrors `productDecisionFeedbackMessages` on web
+    /// (product/packages/core/src/domain/feedback.ts) so the same action
+    /// reads the same way on both platforms.
+    private func decisionFeedbackMessage(for feedback: DecisionFeedback) -> String {
+        switch feedback {
+        case .play: "Set as playing. Your next pick will adapt around it."
+        case .later: "Saved for later. Playfit will look past it for now."
+        case .loved: "Marked as loved."
+        case .liked: "Marked as liked."
+        case .mixed: "Marked as mixed."
+        case .notForMe: "Noted. Playfit will find a better fit."
+        case .playedLoved: "Already played and loved. Playfit will learn from it."
+        case .playedLiked: "Already played and liked."
+        case .playedMixed: "Marked as mixed. Playfit will tune around it."
+        case .playedDropped: "Marked as dropped. Playfit will steer away."
+        }
     }
 
     func advancePast(_ gameId: String) {

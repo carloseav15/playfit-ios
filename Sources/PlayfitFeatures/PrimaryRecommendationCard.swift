@@ -7,11 +7,15 @@ struct PrimaryRecommendationCard: View {
     @Environment(\.playViewModel) private var viewModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let entry: RankedRecommendation
     @Binding var selectedEntry: RankedRecommendation?
-    @Binding var showReasonPicker: Bool
     @Binding var showAlreadyPlayed: Bool
     @State private var decisionHapticTrigger = false
+
+    private var cardSwapAnimation: Animation? {
+        reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
+    }
 
     var body: some View {
         PlayfitGlassCard {
@@ -21,7 +25,6 @@ struct PrimaryRecommendationCard: View {
                 badges
                 reasons
                 pickButton
-                reasonPicker
                 actionButtons
                 skipButton
             }
@@ -30,10 +33,11 @@ struct PrimaryRecommendationCard: View {
         .sheet(isPresented: $showAlreadyPlayed) {
             if let entry = selectedEntry ?? viewModel.primary {
                 AlreadyPlayedSheet { feedback in
-                    viewModel.alreadyPlayed(entry, feedback: feedback)
+                    withAnimation(cardSwapAnimation) {
+                        viewModel.alreadyPlayed(entry, feedback: feedback)
+                    }
                     showAlreadyPlayed = false
                     selectedEntry = nil
-                    showReasonPicker = false
                 }
             }
         }
@@ -121,16 +125,6 @@ struct PrimaryRecommendationCard: View {
         .disabled(viewModel.isPicked(entry.game.id))
     }
 
-    @ViewBuilder
-    private var reasonPicker: some View {
-        if showReasonPicker {
-            FeedbackReasonPicker { reason in
-                viewModel.showToast("Noted: \(reason.lowercased()).")
-                showReasonPicker = false
-            }
-        }
-    }
-
     private var actionButtons: some View {
         let actionLayout = dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(spacing: PlayfitSpacing.sm))
@@ -151,8 +145,9 @@ struct PrimaryRecommendationCard: View {
             .tint(.playfitPositive)
 
             Button {
-                viewModel.notForMe(entry)
-                showReasonPicker = true
+                withAnimation(cardSwapAnimation) {
+                    viewModel.notForMe(entry)
+                }
                 decisionHapticTrigger.toggle()
             } label: {
                 Label("No, skip this", systemImage: "forward")
@@ -169,7 +164,9 @@ struct PrimaryRecommendationCard: View {
 
     private var skipButton: some View {
         Button {
-            viewModel.skip(entry)
+            withAnimation(cardSwapAnimation) {
+                viewModel.skip(entry)
+            }
             decisionHapticTrigger.toggle()
         } label: {
             Text("Show me another option")
