@@ -1,5 +1,6 @@
 import Foundation
 import Logging
+import PlayfitAPI
 import PlayfitModels
 import SwiftData
 
@@ -17,6 +18,7 @@ public final class LocalStorageService: Sendable {
             SDPendingAction.self,
             SDAuthoritativeSnapshot.self,
             SDCanonicalOperation.self,
+            SDTelemetryEvent.self,
         ])
         do {
             let config = ModelConfiguration(isStoredInMemoryOnly: false)
@@ -204,6 +206,30 @@ public final class LocalStorageService: Sendable {
 
     // MARK: - Pending Canonical Decisions
 
+    public func enqueueTelemetryEvent(_ event: CoreLoopClientEvent) {
+        guard let context = newContext() else { return }
+        let id = event.eventId.uuidString
+        let descriptor = FetchDescriptor<SDTelemetryEvent>(predicate: #Predicate { $0.eventId == id })
+        guard (try? context.fetch(descriptor).first) == nil else { return }
+        let all = (try? context.fetch(FetchDescriptor<SDTelemetryEvent>())) ?? []
+        context.insert(SDTelemetryEvent(eventId: id, eventName: event.eventName, recommendationId: event.recommendationId, stateVersion: event.stateVersion, gameId: event.gameId, rank: event.rank, sequence: (all.map(\.sequence).max() ?? 0) + 1))
+        try? context.save()
+    }
+
+    public func loadTelemetryEvents() -> [CoreLoopClientEvent] {
+        guard let context = newContext() else { return [] }
+        var descriptor = FetchDescriptor<SDTelemetryEvent>(); descriptor.sortBy = [SortDescriptor(\.sequence)]
+        return ((try? context.fetch(descriptor)) ?? []).compactMap { item in
+            UUID(uuidString: item.eventId).map { CoreLoopClientEvent(eventId: $0, eventName: item.eventName, recommendationId: item.recommendationId, stateVersion: item.stateVersion, gameId: item.gameId, rank: item.rank) }
+        }
+    }
+
+    public func removeTelemetryEvent(eventId: UUID) {
+        guard let context = newContext() else { return }; let id = eventId.uuidString
+        let descriptor = FetchDescriptor<SDTelemetryEvent>(predicate: #Predicate { $0.eventId == id })
+        if let item = try? context.fetch(descriptor).first { context.delete(item); try? context.save() }
+    }
+
     public func enqueueCanonicalDecision(_ command: CanonicalDecisionCommand) {
         guard let context = newContext() else { return }
         let operationId = command.operationId
@@ -354,6 +380,7 @@ public final class LocalStorageService: Sendable {
         if let canonical = try? context.fetch(FetchDescriptor<SDCanonicalOperation>()) {
             for operation in canonical { context.delete(operation) }
         }
+        if let telemetry = try? context.fetch(FetchDescriptor<SDTelemetryEvent>()) { telemetry.forEach(context.delete) }
         try? context.save()
     }
 }

@@ -53,6 +53,7 @@ extension PlayViewModel {
 
     @MainActor
     public func syncIfOnline() async {
+        await drainTelemetryEvents()
         guard let apiClient else {
             syncState = .offline
             return

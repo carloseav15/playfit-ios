@@ -25,6 +25,7 @@ extension PlayViewModel {
         pickRecommendations.removeAll { $0.game.id == entry.game.id }
         pickRecommendations.insert(savedEntry, at: 0)
         persistGameState(gameId: entry.game.id)
+        recordRecommendationObservation("recommendation_saved", entry: entry)
         storage.cacheRecommendations(uniqueRecommendations(pool + pickRecommendations))
         showToast("Saved to Picks")
     }
@@ -141,6 +142,7 @@ extension PlayViewModel {
     }
 
     public func skip(_ entry: RankedRecommendation) {
+        recordRecommendationObservation("recommendation_skipped", entry: entry)
         advancePast(entry.game.id)
         showToast("Skipped")
     }

@@ -1,15 +1,15 @@
 # Playfit iOS — First-Time Experience & Calibration Flow
 
-Este documento detalla la experiencia del usuario cuando ingresa a Playfit por primera vez a través del flujo del producto. El objetivo principal de este flujo no es construir una biblioteca o catálogo de juegos completa, sino responder con la mayor precisión posible a la pregunta: **¿A qué debería jugar a continuación?**
+This document describes the user experience when entering Playfit for the first time through the product flow. The primary goal is not to build a complete game library or catalog, but to answer one question as precisely as possible: **What should I play next?**
 
-## 1. Filosofía del Flujo
-El flujo de primer contacto debe ser rápido, sin fricción (no requiere inicio de sesión) y estructurado bajo el principio de calibración progresiva.
+## 1. Flow Philosophy
+The first-contact flow should be fast, frictionless (no sign-in required), and structured around progressive calibration.
 
-### El Contrato de Onboarding:
-1. Selección de plataformas disponibles.
-2. Selección de 3 juegos que al usuario le encantaron (Anclas Positivas).
-3. Selección de 1 juego que no le gustó o "falló" (Ancla Negativa).
-4. Generación y presentación de la primera recomendación ("Play Next").
+### Onboarding Contract
+1. Select available platforms.
+2. Select three games the user loved (positive anchors).
+3. Select one game the user did not enjoy or that "missed" (negative anchor).
+4. Generate and present the first recommendation ("Play Next").
 
 ---
 
@@ -17,74 +17,74 @@ El flujo de primer contacto debe ser rápido, sin fricción (no requiere inicio 
 
 ```mermaid
 graph TD
-    A[Inicio: Launcher / Welcome Screen] --> B[Selección de Plataformas]
-    B --> C[Buscar & Agregar 3 Juegos Amados]
-    C --> D[Buscar & Agregar 1 Juego Odiado / Miss]
-    D --> E[Generación de Perfil Anónimo]
-    E --> F[Pantalla Principal: Play Next]
+    A[Start: Launcher / Welcome Screen] --> B[Platform Selection]
+    B --> C[Find & Add 3 Loved Games]
+    C --> D[Find & Add 1 Missed Game]
+    D --> E[Anonymous Profile Generation]
+    E --> F[Main Screen: Play Next]
     F --> G{Interacciones de Feedback}
     G -->|Add to Picks| H[Playfit Picks]
-    G -->|Already Played| I[Guardar Rating / Status Completo]
-    G -->|Not for Me| J[Excluir & Recalibrar]
-    G -->|Show Another| K[Rotación Rápida de Recomendación]
+    G -->|Already Played| I[Save Rating / Complete Status]
+    G -->|Not for Me| J[Exclude & Recalibrate]
+    G -->|Show Another| K[Quick Recommendation Rotation]
 ```
 
 ---
 
-## 3. Detalle Paso a Paso de la Calibración
+## 3. Calibration Step by Step
 
-### Paso A: Pantalla de Bienvenida (Launcher / Welcome)
-* **Objetivo:** Comunicar la promesa de valor del producto inmediatamente.
-* **Mensaje Clave:** *"Elige tus plataformas, 3 juegos que amaste y 1 que no funcionó. Obtén tu siguiente juego recomendado."*
-* **Implementación iOS:**
-  * Una tarjeta de bienvenida elegante en el centro de la pantalla utilizando la estética nativa (translucidez del fondo).
-  * Un botón primario prominente ("Comenzar Calibración") con respuesta háptica suave al tacto.
-  * No se requiere autenticación en este paso. Se asocia un `device_id` local persistido de forma interna (vía `UserDefaults` o llavero seguro si se requiere permanencia).
+### Step A: Welcome Screen (Launcher / Welcome)
+* **Goal:** Communicate the product value proposition immediately.
+* **Key message:** *"Select your platforms, three games you loved, and one game that missed. Get your next game recommendation."*
+* **iOS implementation:**
+  * An elegant welcome card centered on screen using the native visual language (translucent background).
+  * A prominent primary button ("Start Calibration") with gentle haptic feedback.
+  * Authentication is not required at this step. A locally persisted `device_id` is associated internally (through `UserDefaults` or the secure keychain when persistence requires it).
 
-### Paso B: Filtro de Plataformas (Platforms)
-* **Objetivo:** Filtrar el catálogo de juegos por disponibilidad física del usuario.
-* **Interfaz:** Rejilla interactiva de chips para seleccionar consolas/sistemas (PC, PlayStation, Xbox, Nintendo Switch, etc.).
-* **Regla:** El usuario debe elegir al menos una plataforma para desbloquear el siguiente paso.
+### Step B: Platform Filter (Platforms)
+* **Goal:** Filter the game catalog by the user's available hardware.
+* **Interface:** Interactive chips for selecting consoles/systems (PC, PlayStation, Xbox, Nintendo Switch, etc.).
+* **Rule:** The user must select at least one platform to unlock the next step.
 
-### Paso C: Anclas Positivas (3 Loved Games)
-* **Objetivo:** Establecer la base de los gustos del usuario.
-* **Interfaz:** Campo de búsqueda de texto nativo con autocompletado en tiempo real consumiendo el catálogo de juegos.
-* **Comportamiento:**
-  * El usuario busca y agrega exactamente 3 juegos.
-  * Cada selección se despliega en una lista vertical u horizontal en forma de tarjetas con el arte de portada (Cover Art) y un botón `X` para borrar/remplazar.
-  * Se registran en la base de datos como señales positivas fuertes (`rating: 5`).
+### Step C: Positive Anchors (3 Loved Games)
+* **Goal:** Establish the foundation of the user's taste.
+* **Interface:** Native text search with real-time autocomplete backed by the game catalog.
+* **Behavior:**
+  * The user finds and adds exactly three games.
+  * Each selection appears in a vertical or horizontal card list with cover art and an `X` button to remove or replace it.
+  * They are recorded in the database as strong positive signals (`rating: 5`).
 
-### Paso D: Ancla Negativa (1 Miss Game)
-* **Objetivo:** Entender qué géneros, ritmos de juego, mecánicas o elementos evitar.
-* **Interfaz:** Misma experiencia de búsqueda que el paso C, pero enfocada en "un juego que no te haya gustado o haya fallado".
-* **Comportamiento:**
-  * El usuario busca y agrega exactamente 1 juego.
-  * Se registra internamente como una señal negativa fuerte (`rating: 2`, `excluded: true`).
+### Step D: Negative Anchor (1 Missed Game)
+* **Goal:** Understand which genres, pacing, mechanics, or elements to avoid.
+* **Interface:** The same search experience as Step C, focused on "a game you did not enjoy or that missed."
+* **Behavior:**
+  * The user finds and adds exactly one game.
+  * It is recorded internally as a strong negative signal (`rating: 2`, `excluded: true`).
 
 ---
 
-## 4. Pantalla Principal: Decision Surface (`/`)
-Una vez completada la calibración inicial, la app almacena el perfil del dispositivo y abre directamente en esta interfaz en las siguientes sesiones.
+## 4. Main Screen: Decision Surface (`/`)
+Once initial calibration is complete, the app stores the device profile and opens directly to this interface in later sessions.
 
-### A. La Recomendación Principal ("Play this next")
-* **Presentación:** Tarjeta principal grande e imponente (Hero Card) en la mitad superior de la pantalla.
+### A. Primary Recommendation ("Play this next")
+* **Presentation:** Large, prominent hero card in the upper half of the screen.
 * **Elementos Visuales Clave:**
-  * **Arte de portada del juego:** Centrado y de alta calidad.
-  * **Confidence Score (Afinidad):** Porcentaje numérico destacado en una esquina (ej: *85% match*), utilizando el color semántico de datos (`--ink`).
-  * **Razones Humanas (Dossier):** Extracto textual corto que explica de forma lógica el por qué del match (ej: *"Ideal si disfrutaste la exploración de X pero buscas la acción de Y"*).
-  * **Watch-outs (Advertencias):** Riesgos basados en el juego que no le gustó (ej: *"Requiere administración pesada de inventario, similar a Z"*), usando el color semántico `--negative`.
+  * **Game cover art:** Centered and high quality.
+  * **Confidence Score (Affinity):** Prominent percentage in a corner (for example, *85% match*), using the semantic data color (`--ink`).
+  * **Human-readable reasons (Dossier):** Short text explaining why the match makes sense (for example, *"Ideal if you enjoyed X's exploration but want Y's action"*).
+  * **Watch-outs:** Risks based on the game the user disliked (for example, *"Requires heavy inventory management, similar to Z"*), using the semantic `--negative` color.
 
-### B. Alternativas Secundarias ("Worth checking")
-* **Presentación:** 2 o 3 tarjetas de menor tamaño dispuestas horizontalmente debajo de la tarjeta principal para ofrecer alternativas sin distraer del foco principal.
+### B. Secondary Alternatives ("Worth checking")
+* **Presentation:** Two or three smaller cards arranged horizontally below the primary card to offer alternatives without distracting from the main focus.
 
-### C. Acciones Rápidas (Feedback Loop)
-Estas acciones permiten al usuario tomar decisiones rápidas que recalibran su perfil en tiempo real:
-* **Add to Playfit Picks:** Guarda el juego en su lista de prioritarios para jugar más tarde. Setea `inPlayfitPicks: true`.
-* **Started:** El usuario indica que empezó a jugarlo. Setea `status: "playing"` y quita el juego de los picks.
-* **Already Played:** Abre un panel modal donde el usuario selecciona su nivel de satisfacción histórica:
+### C. Quick Actions (Feedback Loop)
+These actions let the user make quick decisions that recalibrate their profile in real time:
+* **Add to Playfit Picks:** Saves the game to the user's priority list for later. Sets `inPlayfitPicks: true`.
+* **Started:** The user indicates they started playing it. Sets `status: "playing"` and removes the game from Picks.
+* **Already Played:** Opens a modal where the user selects their historical satisfaction level:
   * *Loved it!* (rating 5, completed)
   * *Liked it* (rating 4, completed)
   * *Mixed* (rating 3, completed)
   * *Dropped it* (rating 2, abandoned, excluded)
-* **Not for Me:** Excluye el juego de manera permanente de futuras recomendaciones (`rating: 2`, `excluded: true`).
-* **Show Another:** Rota el juego principal actual por otra alternativa recomendada del backend sin generar impacto ni entrenar el algoritmo (es un skip local sin repercusión en la afinidad).
+* **Not for Me:** Permanently excludes the game from future recommendations (`rating: 2`, `excluded: true`).
+* **Show Another:** Replaces the current primary game with another backend recommendation without affecting or training the algorithm (a local skip with no affinity impact).

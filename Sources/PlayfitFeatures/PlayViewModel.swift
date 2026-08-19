@@ -48,6 +48,7 @@ public final class PlayViewModel {
     public var onboardingLikedGameIds: [String] = []
     public var onboardingDislikedGameIds: [String] = []
     public var onboardingCompletedAt: String?
+    private var emittedCoreLoopObservationKeys: Set<String> = []
 
     public var platforms: [Platform]
     public var gamesCache: [String: Game] = [:]
@@ -120,5 +121,39 @@ public final class PlayViewModel {
 
     public var pendingActionsCount: Int {
         storage.loadPendingActions().count + storage.loadCanonicalDecisions().count
+    }
+
+    public func recordRecommendationObservation(_ eventName: String, entry: RankedRecommendation) {
+        guard let rank = rankingMetadata.candidates.first(where: { $0.gameId == entry.game.id })?.rank else { return }
+        let key = "\(eventName):\(stateVersion):\(entry.game.id):\(rank)"
+        guard !emittedCoreLoopObservationKeys.contains(key) else { return }
+        emittedCoreLoopObservationKeys.insert(key)
+        let eventId = stableCoreLoopEventId(for: key)
+        let event = CoreLoopClientEvent(
+            eventId: eventId,
+            eventName: eventName,
+            recommendationId: "play-next:\(stateVersion)",
+            stateVersion: stateVersion,
+            gameId: entry.game.id,
+            rank: rank
+        )
+        storage.enqueueTelemetryEvent(event)
+        Task { await drainTelemetryEvents() }
+    }
+
+    private func stableCoreLoopEventId(for key: String) -> UUID {
+        let defaultsKey = "playfit.core-loop.event.\(key)"
+        if let raw = UserDefaults.standard.string(forKey: defaultsKey), let value = UUID(uuidString: raw) { return value }
+        let value = UUID()
+        UserDefaults.standard.set(value.uuidString, forKey: defaultsKey)
+        return value
+    }
+
+    func drainTelemetryEvents() async {
+        guard let apiClient else { return }
+        for event in storage.loadTelemetryEvents() {
+            do { try await apiClient.recordCoreLoopEvent(event); storage.removeTelemetryEvent(eventId: event.eventId) }
+            catch { break }
+        }
     }
 }

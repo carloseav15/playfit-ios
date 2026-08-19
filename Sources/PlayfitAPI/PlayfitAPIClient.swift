@@ -27,6 +27,7 @@ public protocol PlayfitAPIClient: Sendable {
     func fetchPlayNext() async throws -> PlayNextModel
     func fetchAuthoritativeSnapshot() async throws -> AuthoritativeSnapshot
     func submitCanonicalDecision(_ command: CanonicalDecisionCommand) async throws -> CanonicalDecisionResponse
+    func recordCoreLoopEvent(_ event: CoreLoopClientEvent) async throws
     func fetchPicks() async throws -> [RankedRecommendation]
     func fetchProfile() async throws -> UserProfile?
     func fetchGameStates() async throws -> [String: UserGameState]
@@ -45,4 +46,28 @@ public protocol PlayfitAPIClient: Sendable {
     func deleteProfile() async throws
     func deleteGameState(gameId: String) async throws
     func setAuthSession(_ session: AuthSession?)
+}
+
+public struct CoreLoopClientEvent: Codable, Sendable {
+    public let eventId: UUID
+    public let eventName: String
+    public let clientPlatform: String
+    public let recommendationId: String
+    public let stateVersion: String
+    public let gameId: String
+    public let rank: Int
+
+    public init(eventId: UUID, eventName: String, clientPlatform: String = "ios", recommendationId: String, stateVersion: String, gameId: String, rank: Int) {
+        self.eventId = eventId
+        self.eventName = eventName
+        self.clientPlatform = clientPlatform
+        self.recommendationId = recommendationId
+        self.stateVersion = stateVersion
+        self.gameId = gameId
+        self.rank = rank
+    }
+}
+
+public extension PlayfitAPIClient {
+    func recordCoreLoopEvent(_ event: CoreLoopClientEvent) async throws {}
 }

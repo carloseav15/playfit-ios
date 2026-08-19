@@ -1,30 +1,34 @@
 # Playfit iOS — Design System & UI Kit Mapping
 
-Este documento define la traducción semántica del sistema de diseño (UI Kit) y componentes del producto web hacia el entorno nativo de SwiftUI en iOS, adoptando las guías de diseño de Apple (HIG) y detallando las configuraciones de red y OAuth de Supabase.
+This document defines the semantic mapping of the design system (UI Kit) and web product components
+to the native SwiftUI environment on iOS. It follows Apple's Human Interface Guidelines (HIG) and
+details Supabase networking and OAuth configuration.
 
 ---
 
-## 1. Mapeo de Variables y Tokens Visuales
+## 1. Variables and Visual Token Mapping
 
-### A. Paleta de Colores
-En SwiftUI, no se deben usar colores planos genéricos. Definiremos una extensión de `Color` que traduzca las variables CSS de Next.js (`Tailwind v4`) a colores dinámicos con soporte nativo de Light/Dark Mode en iOS:
+### A. Color Palette
+SwiftUI should not use generic flat colors. We define a `Color` extension that maps Next.js CSS
+variables (`Tailwind v4`) to dynamic colors with native Light/Dark Mode support on iOS:
 
-| Token CSS Web | Color Hex (Light / Dark) | SwiftUI Asset Name / Código | Uso del Token |
+| Web CSS Token | Color Hex (Light / Dark) | SwiftUI Asset Name / Code | Token Usage |
 | :--- | :--- | :--- | :--- |
-| `--background` | `#f8fafc` / `#070a12` | `Color.playfitBackground` (ya implementado en `Colors.swift`) | Fondo general de las pantallas y vistas de lista. |
-| `--foreground` | `#17201d` / `#f8fafc` | `Color.playfitForeground` | Texto principal, títulos e iconos decorativos. |
-| `--card` | `#ffffff` opaco (light) / `rgba(15,23,42,0.76)` semi-transparente (dark) | `.thinMaterial` / `.ultraThinMaterial` | Fondo de contenedores e información flotante. Light mode es opaco en la web; el material translúcido nativo es una adaptación intencional, no una réplica 1:1. |
-| `--accent` | `#0f766e` / `#ff6a3d` | `Color("playfitAccent")` | **Solo Interactividad:** Botones, interruptores, chips y estados activos. |
-| `--ink` | `#0d9488` / `#38bdf8` | `Color("playfitInk")` | **Solo Datos/Métricas:** Confidence scores, porcentajes y gráficos. |
-| `--positive` | `#047857` / `#34d399` | `Color.green` | Badges de coincidencia fuerte y estados de éxito. |
-| `--warning` | `#b45309` / `#fbbf24` | `Color.orange` o `Color.yellow` | Advertencias moderadas, wishlist, y carga intermedia. |
-| `--negative` | `#be123c` / `#fb7185` | `Color.red` | Alertas críticas, watch-outs de juegos, y bloqueos. |
-| `--border` | Opacidad baja | `Color.primary.opacity(0.15)` | Bordes sutiles de separación para tarjetas de cristal. |
+| `--background` | `#f8fafc` / `#070a12` | `Color.playfitBackground` (already implemented in `Colors.swift`) | General background for screens and list views. |
+| `--foreground` | `#17201d` / `#f8fafc` | `Color.playfitForeground` | Primary text, titles, and decorative icons. |
+| `--card` | Opaque `#ffffff` (light) / semi-transparent `rgba(15,23,42,0.76)` (dark) | `.thinMaterial` / `.ultraThinMaterial` | Container and floating-information background. Light mode is opaque on web; native translucent material is an intentional adaptation, not a 1:1 replica. |
+| `--accent` | `#0f766e` / `#ff6a3d` | `Color("playfitAccent")` | **Interaction only:** buttons, toggles, chips, and active states. |
+| `--ink` | `#0d9488` / `#38bdf8` | `Color("playfitInk")` | **Data/metrics only:** confidence scores, percentages, and charts. |
+| `--positive` | `#047857` / `#34d399` | `Color.green` | Strong-match badges and success states. |
+| `--warning` | `#b45309` / `#fbbf24` | `Color.orange` or `Color.yellow` | Moderate warnings, wishlist, and intermediate loading. |
+| `--negative` | `#be123c` / `#fb7185` | `Color.red` | Critical alerts, game watch-outs, and blockers. |
+| `--border` | Low opacity | `Color.primary.opacity(0.15)` | Subtle separation borders for glass cards. |
 
 ---
 
-### B. Tipografía
-Reemplazaremos las fuentes web (*Geist*) por la fuente del sistema de Apple (*San Francisco*) para asegurar una correcta legibilidad y soporte automático de Dynamic Type (escalado de fuentes por accesibilidad):
+### B. Typography
+We replace the web (*Geist*) fonts with Apple's system font (*San Francisco*) to ensure readability
+and automatic Dynamic Type support (accessibility font scaling):
 
 | Estilo Web | Atributos CSS | SwiftUI `Font` Equivalente |
 | :--- | :--- | :--- |
@@ -38,7 +42,7 @@ Reemplazaremos las fuentes web (*Geist*) por la fuente del sistema de Apple (*Sa
 
 ---
 
-### C. Iconografía
+### C. Iconography
 Lucide Icons se reemplaza por **SF Symbols** de Apple para mantener coherencia nativa con el sistema operativo:
 
 * 🧭 `Compass` $\rightarrow$ `safari.fill` o `compass.drawing`
@@ -51,71 +55,74 @@ Lucide Icons se reemplaza por **SF Symbols** de Apple para mantener coherencia n
 
 ---
 
-## 2. Traducción de Componentes del Producto a SwiftUI (Estilo HIG Apple)
+## 2. Mapping Product Components to SwiftUI (Apple HIG Style)
 
-Para que los componentes del producto se sientan nativos y mantengan la estética de la app, adaptaremos su diseño de la siguiente manera:
+To make product components feel native while preserving the app's visual language, adapt them as follows:
 
-### A. La Tarjeta Estrella (Hero Recommendation Card)
-* **Web:** Es una tarjeta con un fondo translúcido semi-opaco y efectos de borde difuminados mediante Tailwind.
+### A. Hero Recommendation Card
+* **Web:** A card with a semi-opaque translucent background and blurred border effects through Tailwind.
 * **iOS (Liquid Glass HIG):**
-  * Usar `.background(.ultraThinMaterial)` para que tome el color de fondo dinámicamente.
-  * Añadir un borde sutil blanco o gris muy claro (`Color.white.opacity(0.15)`) con un grosor de `0.5` pt.
-  * Implementar gestos nativos: Swipe horizontal para rotar la recomendación rápidamente, o un toque largo (Haptic Context Menu) para disparar opciones de calificación sin abrir el juego.
+  * Use `.background(.ultraThinMaterial)` so the background color updates dynamically.
+  * Add a subtle white or light-gray border (`Color.white.opacity(0.15)`) with a `0.5` pt width.
+  * Implement native gestures: horizontal swipe to rotate the recommendation quickly, or a long press
+    (Haptic Context Menu) to expose rating options without opening the game.
 
-### B. Chips de Selección (Toggle Chips / Platforms)
-* **Web:** Botones interactivos con hover y cambios de fondo de color planos.
+### B. Selection Chips (Toggle Chips / Platforms)
+* **Web:** Interactive buttons with hover states and flat background-color changes.
 * **iOS (HIG):**
-  * Botones tipo pastilla (`Capsule`) usando `.background(isSelected ? Color("playfitAccent") : Color.secondary.opacity(0.2))`.
-  * Animación suave en SwiftUI (`withAnimation(.spring())`) al cambiar su estado de selección.
+  * Use pill-shaped (`Capsule`) buttons with `.background(isSelected ? Color("playfitAccent") : Color.secondary.opacity(0.2))`.
+  * Use a smooth SwiftUI animation (`withAnimation(.spring())`) when selection changes.
 
-### C. Arte de Portada (Cover Art Component)
-* **Web:** Imagen responsiva con relación de aspecto fija y bordes redondeados.
+### C. Cover Art Component
+* **Web:** Responsive image with a fixed aspect ratio and rounded corners.
 * **iOS (HIG):**
-  * Implementar un contenedor con una relación de aspecto de afiche típica (`.aspectRatio(3/4, contentMode: .fit)`).
-  * Esquinas redondeadas suaves (`.cornerRadius(12)`).
-  * Mostrar un placeholder elegante con un degradado en escala de grises y un icono de mando de consola (`gamecontroller.fill`) en el centro mientras la portada carga de forma asíncrona (`AsyncImage`).
+  * Use a container with a typical poster aspect ratio (`.aspectRatio(3/4, contentMode: .fit)`).
+  * Use soft rounded corners (`.cornerRadius(12)`).
+  * Show an elegant grayscale-gradient placeholder with a game-controller icon (`gamecontroller.fill`)
+    centered while the cover loads asynchronously (`AsyncImage`).
 
-### D. Dossier de Detalles del Juego
-Ver `play-route-mapping.md` para el mapeo de ruta (`/game/[gameId]` → `GameDetailView.swift`) y el
-contrato de producto de esa pantalla. Este documento solo cubre la traducción visual: presentar
-mediante un **Sheet nativo** (`.sheet(isPresented:)`) o transición dentro de un `NavigationStack`,
-con la cabecera colapsándose elegantemente al hacer scroll hacia arriba.
+### D. Game Details Dossier
+See `play-route-mapping.md` for the route mapping (`/game/[gameId]` → `GameDetailView.swift`) and
+that screen's product contract. This document covers visual mapping only: present it with a native
+**Sheet** (`.sheet(isPresented:)`) or a transition inside a `NavigationStack`, with the header
+collapsing elegantly as the user scrolls up.
 
 ---
 
-## 3. URLs y Entornos de Conexión (Supabase & Google Auth)
+## 3. URLs and Connection Environments (Supabase & Google Auth)
 
-La app nativa ya tiene conexión directa con el backend y autenticación implementadas (`PlayfitAPI`, `PlayfitStorage`, ver `architecture.md`); se detallan las URLs del sistema para cada entorno:
+The native app already has direct backend connectivity and authentication implemented (`PlayfitAPI`,
+`PlayfitStorage`; see `architecture.md`). The system URLs for each environment are listed below:
 
-### A. Entorno de Desarrollo (Local)
-* **Next.js Web / API Local:** `http://127.0.0.1:3000`
-  * Las peticiones de la app de iOS hacia el backend para obtener perfiles y recomendaciones de prueba deben apuntar a este endpoint local (ej: `http://127.0.0.1:3000/api/recommendations/today`).
-* **Supabase Local (CLI):** `http://127.0.0.1:54321`
-  * Las APIs locales de Supabase (Auth, REST y Functions) se levantan en este puerto.
+### A. Development Environment (Local)
+* **Local Next.js Web / API:** `http://127.0.0.1:3000`
+  * iOS requests to the backend for test profiles and recommendations must target this local endpoint (for example, `http://127.0.0.1:3000/api/recommendations/today`).
+* **Local Supabase (CLI):** `http://127.0.0.1:54321`
+  * Local Supabase APIs (Auth, REST, and Functions) run on this port.
 * **Google OAuth Redirect URL (Local):** `http://127.0.0.1:3000/auth/callback`
-  * Flujo web de retorno local tras loguearse con Google.
+  * Local web return flow after signing in with Google.
 
-### B. Entorno de Producción
-* **Next.js Web / API Producción:** `https://playfit-gold.vercel.app`
-  * Endpoint productivo de la API de Playfit (ej: `https://playfit-gold.vercel.app/api/profile`).
-* **Supabase Producción:** Configurado dinámicamente en el backend en Vercel conectado con el proyecto Cloud de Supabase (Región AWS `us-east-1`).
+### B. Production Environment
+* **Production Next.js Web / API:** `https://playfit-gold.vercel.app`
+  * Production Playfit API endpoint (for example, `https://playfit-gold.vercel.app/api/profile`).
+* **Production Supabase:** Configured dynamically in the Vercel backend connected to the Supabase Cloud project (AWS region `us-east-1`).
 
-### C. Configuración del Login de Google en iOS (OAuth & Deep Links)
-Para habilitar el inicio de sesión nativo de Google o mediante Supabase Auth en la aplicación de iOS, se deben contemplar estas especificaciones:
+### C. Google Sign-In Configuration on iOS (OAuth & Deep Links)
+To enable native Google sign-in or Supabase Auth sign-in in the iOS app, follow these specifications:
 
-1. **Esquema de URL Personalizado (URL Scheme):**
-   * En el panel de configuración de Xcode (`Info.plist`), registrar un URL Scheme único para la aplicación, por ejemplo: `playfit` o `com.playfit.app`.
-2. **Redirect URL Registrada en Supabase:**
-   * En la consola de Supabase (tanto local en `config.toml` como en producción), se debe añadir la URI de redirección nativa en la lista de URLs permitidas de autenticación (Redirect URLs):
+1. **Custom URL Scheme:**
+   * In Xcode's configuration panel (`Info.plist`), register a unique URL Scheme for the app, such as `playfit` or `com.playfit.app`.
+2. **Redirect URL Registered in Supabase:**
+   * In the Supabase console (both locally in `config.toml` and in production), add the native redirect URI to the allowed authentication URLs (Redirect URLs):
      ```text
      playfit://auth/callback
      ```
-3. **Flujo de Autenticación de SwiftUI:**
-   * Al invocar la autenticación OAuth con el proveedor `"google"`, el cliente SDK de Supabase para Swift debe enviar la solicitud de redirección apuntando a la URL nativa:
+3. **SwiftUI Authentication Flow:**
+   * When invoking OAuth authentication with the `"google"` provider, the Supabase Swift SDK client must send the redirect request to the native URL:
      ```swift
      let url = supabase.auth.getOAuthSignInUrl(
          provider: "google",
          redirectTo: URL(string: "playfit://auth/callback")
      )
      ```
-   * Utilizar `ASWebAuthenticationSession` para capturar de forma segura la redirección dentro de la app nativa y completar la sesión del usuario de forma transparente.
+   * Use `ASWebAuthenticationSession` to capture the redirect securely inside the native app and complete the user's session transparently.

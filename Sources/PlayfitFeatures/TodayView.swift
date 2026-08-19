@@ -38,6 +38,7 @@ public struct TodayView: View {
                             selectedEntry: $selectedEntry,
                             showAlreadyPlayed: $showAlreadyPlayed
                         )
+                        .onAppear { viewModel.recordRecommendationObservation("recommendation_shown", entry: primary) }
                         .id(primary.game.id)
                         .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
                         header
