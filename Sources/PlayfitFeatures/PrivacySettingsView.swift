@@ -60,11 +60,11 @@ struct PrivacySettingsView: View {
                                         if actionPending {
                                             ProgressView()
                                                 .controlSize(.small)
-                                                .tint(.white)
+                                                .tint(Color.playfitNegativeForeground)
                                         } else {
                                             Text("Confirm Reset")
                                                 .font(.caption.bold())
-                                                .foregroundColor(.white)
+                                                .foregroundColor(Color.playfitNegativeForeground)
                                         }
                                     }
                                     .padding(.horizontal, 16)
@@ -150,11 +150,11 @@ struct PrivacySettingsView: View {
                                         if actionPending {
                                             ProgressView()
                                                 .controlSize(.small)
-                                                .tint(.white)
+                                                .tint(Color.playfitNegativeForeground)
                                         } else {
                                             Text("Confirm Delete")
                                                 .font(.caption.bold())
-                                                .foregroundColor(.white)
+                                                .foregroundColor(Color.playfitNegativeForeground)
                                         }
                                     }
                                     .padding(.horizontal, 16)

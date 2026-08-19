@@ -10,11 +10,13 @@ extension Color {
     public static let playfitBackground = dynamicColor(lightHex: "#f8fafc", darkHex: "#070a12")
     public static let playfitForeground = dynamicColor(lightHex: "#0f172a", darkHex: "#f8fafc")
     public static let playfitAccent = dynamicColor(lightHex: "#0f766e", darkHex: "#ff6a3d")
+    public static let playfitAccentForeground = dynamicColor(lightHex: "#ffffff", darkHex: "#0f172a")
     public static let playfitInk = dynamicColor(lightHex: "#0d9488", darkHex: "#38bdf8")
     
     public static let playfitPositive = dynamicColor(lightHex: "#047857", darkHex: "#34d399")
     public static let playfitWarning = dynamicColor(lightHex: "#b45309", darkHex: "#fbbf24")
     public static let playfitNegative = dynamicColor(lightHex: "#be123c", darkHex: "#fb7185")
+    public static let playfitNegativeForeground = dynamicColor(lightHex: "#ffffff", darkHex: "#0f172a")
     public static let playfitToneAccent = dynamicColor(lightHex: "#0369a1", darkHex: "#7dd3fc")
     public static let playfitIndigo = dynamicColor(lightHex: "#4f46e5", darkHex: "#4f46e5")
 

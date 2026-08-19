@@ -6,30 +6,47 @@ import SwiftData
 public final class LocalStorageService: Sendable {
     public static let shared = LocalStorageService()
 
-    private let container: ModelContainer
+    private let container: ModelContainer?
     private let logger = Logger(label: "com.playfit.storage")
 
     public init() {
+        let schema = Schema([
+            SDProfile.self,
+            SDGameState.self,
+            SDCachedRecommendation.self,
+            SDPendingAction.self,
+            SDAuthoritativeSnapshot.self,
+            SDCanonicalOperation.self,
+        ])
         do {
-            let schema = Schema([SDProfile.self, SDGameState.self, SDCachedRecommendation.self, SDPendingAction.self])
             let config = ModelConfiguration(isStoredInMemoryOnly: false)
             container = try ModelContainer(for: schema, configurations: [config])
         } catch {
-            logger.error("ModelContainer setup failed: \(error.localizedDescription)")
-            fatalError("PlayfitStorage: could not initialize ModelContainer: \(error)")
+            logger.error("Persistent ModelContainer setup failed: \(error.localizedDescription)")
+            do {
+                let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                container = try ModelContainer(for: schema, configurations: [fallbackConfig])
+                logger.warning("Using an in-memory storage fallback; local data will not persist")
+            } catch {
+                logger.error("In-memory ModelContainer setup also failed: \(error.localizedDescription)")
+                container = nil
+            }
         }
     }
 
+    public var isAvailable: Bool { container != nil }
+
     // MARK: - Context
 
-    private func newContext() -> ModelContext {
-        ModelContext(container)
+    private func newContext() -> ModelContext? {
+        guard let container else { return nil }
+        return ModelContext(container)
     }
 
     // MARK: - Profile
 
     public func loadProfile() -> UserProfile? {
-        let context = newContext()
+        guard let context = newContext() else { return nil }
         let descriptor = FetchDescriptor<SDProfile>()
         guard let sd = try? context.fetch(descriptor).first else { return nil }
         return UserProfile(
@@ -44,7 +61,7 @@ public final class LocalStorageService: Sendable {
     }
 
     public func loadOnboardingStatus() -> (completed: Bool, platformIds: Set<String>) {
-        let context = newContext()
+        guard let context = newContext() else { return (false, []) }
         let descriptor = FetchDescriptor<SDProfile>()
         guard let sd = try? context.fetch(descriptor).first else {
             return (false, [])
@@ -53,7 +70,7 @@ public final class LocalStorageService: Sendable {
     }
 
     public func saveProfile(_ profile: UserProfile, platformIds: Set<String>, onboardingCompleted: Bool) {
-        let context = newContext()
+        guard let context = newContext() else { return }
         let descriptor = FetchDescriptor<SDProfile>()
         let existing = try? context.fetch(descriptor).first
         let sd = existing ?? SDProfile()
@@ -85,7 +102,7 @@ public final class LocalStorageService: Sendable {
     // MARK: - Game States
 
     public func loadGameStates() -> [String: UserGameState] {
-        let context = newContext()
+        guard let context = newContext() else { return [:] }
         let descriptor = FetchDescriptor<SDGameState>()
         guard let results = try? context.fetch(descriptor) else { return [:] }
         var states: [String: UserGameState] = [:]
@@ -103,7 +120,7 @@ public final class LocalStorageService: Sendable {
     }
 
     public func deleteGameState(gameId: String) {
-        let context = newContext()
+        guard let context = newContext() else { return }
         let id = gameId
         let descriptor = FetchDescriptor<SDGameState>(predicate: #Predicate { $0.gameId == id })
         guard let existing = try? context.fetch(descriptor).first else { return }
@@ -112,7 +129,7 @@ public final class LocalStorageService: Sendable {
     }
 
     public func saveGameState(gameId: String, state: UserGameState) {
-        let context = newContext()
+        guard let context = newContext() else { return }
         let id = gameId
         let descriptor = FetchDescriptor<SDGameState>(predicate: #Predicate { $0.gameId == id })
         let existing = try? context.fetch(descriptor).first
@@ -129,7 +146,7 @@ public final class LocalStorageService: Sendable {
     // MARK: - Cached Recommendations
 
     public func loadCachedRecommendations() -> [RankedRecommendation] {
-        let context = newContext()
+        guard let context = newContext() else { return [] }
         let descriptor = FetchDescriptor<SDCachedRecommendation>()
         guard let results = try? context.fetch(descriptor) else { return [] }
         var recs: [RankedRecommendation] = []
@@ -142,7 +159,10 @@ public final class LocalStorageService: Sendable {
     }
 
     public func cacheRecommendations(_ recommendations: [RankedRecommendation]) {
-        let context = newContext()
+        guard let context = newContext() else { return }
+        if let existing = try? context.fetch(FetchDescriptor<SDCachedRecommendation>()) {
+            for cached in existing { context.delete(cached) }
+        }
         for rec in recommendations {
             guard let data = try? JSONEncoder().encode(rec) else { continue }
             let id = rec.game.id
@@ -156,10 +176,110 @@ public final class LocalStorageService: Sendable {
         try? context.save()
     }
 
+    // MARK: - Authoritative Snapshot
+
+    public func loadAuthoritativeSnapshot() -> AuthoritativeSnapshot? {
+        guard let context = newContext(),
+              let stored = try? context.fetch(FetchDescriptor<SDAuthoritativeSnapshot>()).first else {
+            return nil
+        }
+        return try? JSONDecoder().decode(AuthoritativeSnapshot.self, from: stored.snapshotData)
+    }
+
+    public func saveAuthoritativeSnapshot(_ snapshot: AuthoritativeSnapshot) {
+        guard let context = newContext(),
+              let data = try? JSONEncoder().encode(snapshot) else { return }
+        let descriptor = FetchDescriptor<SDAuthoritativeSnapshot>()
+        let existing = try? context.fetch(descriptor).first
+        let stored = existing ?? SDAuthoritativeSnapshot(
+            stateVersion: snapshot.stateVersion,
+            snapshotData: data
+        )
+        stored.stateVersion = snapshot.stateVersion
+        stored.snapshotData = data
+        stored.updatedAt = Date()
+        if existing == nil { context.insert(stored) }
+        try? context.save()
+    }
+
+    // MARK: - Pending Canonical Decisions
+
+    public func enqueueCanonicalDecision(_ command: CanonicalDecisionCommand) {
+        guard let context = newContext() else { return }
+        let operationId = command.operationId
+        let descriptor = FetchDescriptor<SDCanonicalOperation>(
+            predicate: #Predicate { $0.operationId == operationId }
+        )
+        if let existing = try? context.fetch(descriptor).first {
+            existing.expectedStateVersion = command.expectedStateVersion
+            existing.actionType = command.actionType.rawValue
+            existing.gameId = command.gameId
+            existing.played = command.played
+            existing.targetOperationId = command.targetOperationId
+            try? context.save()
+            return
+        }
+
+        let existingOperations = (try? context.fetch(FetchDescriptor<SDCanonicalOperation>())) ?? []
+        let nextSequence = (existingOperations.map(\.sequence).max() ?? 0) + 1
+        context.insert(SDCanonicalOperation(
+            operationId: command.operationId,
+            expectedStateVersion: command.expectedStateVersion,
+            actionType: command.actionType.rawValue,
+            gameId: command.gameId,
+            played: command.played,
+            targetOperationId: command.targetOperationId,
+            sequence: nextSequence
+        ))
+        try? context.save()
+    }
+
+    public func loadCanonicalDecisions() -> [CanonicalDecisionCommand] {
+        guard let context = newContext() else { return [] }
+        var descriptor = FetchDescriptor<SDCanonicalOperation>()
+        descriptor.sortBy = [SortDescriptor(\.sequence, order: .forward)]
+        let operations = (try? context.fetch(descriptor)) ?? []
+        return operations.compactMap { operation in
+            guard let actionType = CanonicalDecisionActionType(rawValue: operation.actionType) else {
+                return nil
+            }
+            return CanonicalDecisionCommand(
+                operationId: operation.operationId,
+                expectedStateVersion: operation.expectedStateVersion,
+                actionType: actionType,
+                gameId: operation.gameId,
+                played: operation.played,
+                targetOperationId: operation.targetOperationId
+            )
+        }
+    }
+
+    public func updateCanonicalDecisionExpectedVersion(operationId: String, stateVersion: String) {
+        guard let context = newContext() else { return }
+        let id = operationId
+        let descriptor = FetchDescriptor<SDCanonicalOperation>(
+            predicate: #Predicate { $0.operationId == id }
+        )
+        guard let operation = try? context.fetch(descriptor).first else { return }
+        operation.expectedStateVersion = stateVersion
+        try? context.save()
+    }
+
+    public func removeCanonicalDecision(operationId: String) {
+        guard let context = newContext() else { return }
+        let id = operationId
+        let descriptor = FetchDescriptor<SDCanonicalOperation>(
+            predicate: #Predicate { $0.operationId == id }
+        )
+        guard let operation = try? context.fetch(descriptor).first else { return }
+        context.delete(operation)
+        try? context.save()
+    }
+
     // MARK: - Pending Actions
 
     public func enqueuePendingAction(gameId: String, actionType: String, payload: Data) {
-        let context = newContext()
+        guard let context = newContext() else { return }
         let descriptor = FetchDescriptor<SDPendingAction>(
             predicate: #Predicate { $0.gameId == gameId && $0.actionType == actionType }
         )
@@ -173,14 +293,14 @@ public final class LocalStorageService: Sendable {
     }
 
     public func loadPendingActions() -> [SDPendingAction] {
-        let context = newContext()
+        guard let context = newContext() else { return [] }
         var descriptor = FetchDescriptor<SDPendingAction>()
         descriptor.sortBy = [SortDescriptor(\.createdAt, order: .forward)]
         return (try? context.fetch(descriptor)) ?? []
     }
 
     public func removePendingAction(id: String) {
-        let context = newContext()
+        guard let context = newContext() else { return }
         let descriptor = FetchDescriptor<SDPendingAction>(predicate: #Predicate { $0.id == id })
         guard let existing = try? context.fetch(descriptor).first else { return }
         context.delete(existing)
@@ -188,7 +308,7 @@ public final class LocalStorageService: Sendable {
     }
 
     public func removePendingAction(gameId: String, actionType: String) {
-        let context = newContext()
+        guard let context = newContext() else { return }
         let descriptor = FetchDescriptor<SDPendingAction>(
             predicate: #Predicate { $0.gameId == gameId && $0.actionType == actionType }
         )
@@ -197,10 +317,25 @@ public final class LocalStorageService: Sendable {
         try? context.save()
     }
 
+    /// An authoritative snapshot supersedes every legacy PATCH/DELETE. Those commands
+    /// have no state-version guard, so retaining any of them could overwrite N+1.
+    public func removePendingActions() {
+        guard let context = newContext() else { return }
+        let descriptor = FetchDescriptor<SDPendingAction>()
+        guard let pending = try? context.fetch(descriptor) else { return }
+        pending.forEach(context.delete)
+        try? context.save()
+    }
+
     // MARK: - Full Wipe
 
     public func deleteAllLocalData() {
-        let context = newContext()
+        defer {
+            UserDefaults.standard.removeObject(forKey: "playfit.onboarding.likedIds")
+            UserDefaults.standard.removeObject(forKey: "playfit.onboarding.dislikedIds")
+            UserDefaults.standard.removeObject(forKey: "playfit.onboarding.completedAt")
+        }
+        guard let context = newContext() else { return }
         if let profiles = try? context.fetch(FetchDescriptor<SDProfile>()) {
             for sd in profiles { context.delete(sd) }
         }
@@ -213,9 +348,12 @@ public final class LocalStorageService: Sendable {
         if let pending = try? context.fetch(FetchDescriptor<SDPendingAction>()) {
             for sd in pending { context.delete(sd) }
         }
+        if let snapshots = try? context.fetch(FetchDescriptor<SDAuthoritativeSnapshot>()) {
+            for snapshot in snapshots { context.delete(snapshot) }
+        }
+        if let canonical = try? context.fetch(FetchDescriptor<SDCanonicalOperation>()) {
+            for operation in canonical { context.delete(operation) }
+        }
         try? context.save()
-        UserDefaults.standard.removeObject(forKey: "playfit.onboarding.likedIds")
-        UserDefaults.standard.removeObject(forKey: "playfit.onboarding.dislikedIds")
-        UserDefaults.standard.removeObject(forKey: "playfit.onboarding.completedAt")
     }
 }

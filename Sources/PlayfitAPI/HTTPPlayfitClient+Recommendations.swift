@@ -7,10 +7,7 @@ extension HTTPPlayfitClient {
         var request = try await makeRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }

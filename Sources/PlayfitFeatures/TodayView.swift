@@ -20,11 +20,16 @@ public struct TodayView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: PlayfitSpacing.lg) {
                     if viewModel.isLoading {
-                        TodayLoadingState(slowLoading: slowLoading)
+                        TodayLoadingState(
+                            slowLoading: slowLoading,
+                            statusMessage: viewModel.canonicalStatusMessage
+                        )
                             .task {
                                 try? await Task.sleep(for: .seconds(3))
                                 slowLoading = true
                             }
+                    } else if let canonicalStatus = viewModel.canonicalStatusMessage {
+                        canonicalStatusState(canonicalStatus)
                     } else if let error = viewModel.error {
                         errorState(error)
                     } else if let primary = viewModel.primary {
@@ -99,6 +104,23 @@ public struct TodayView: View {
             }
             .buttonStyle(.borderedProminent)
             .accessibilityLabel("Try reloading recommendations")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 40)
+    }
+
+    private func canonicalStatusState(_ message: String) -> some View {
+        VStack(spacing: PlayfitSpacing.sm) {
+            Image(systemName: "icloud.and.arrow.up")
+                .font(.title2)
+                .foregroundStyle(Color.playfitAccent)
+            Text(message)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+            if viewModel.apiClient != nil {
+                Button("Retry") { Task { await viewModel.syncIfOnline() } }
+                    .buttonStyle(.borderedProminent)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)

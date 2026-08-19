@@ -36,7 +36,10 @@ let package = Package(
         ),
         .target(
             name: "PlayfitAPI",
-            dependencies: ["PlayfitModels"]
+            dependencies: [
+                "PlayfitModels",
+                .product(name: "Logging", package: "swift-log"),
+            ]
         ),
         .target(
             name: "PlayfitStorage",
@@ -71,11 +74,16 @@ let package = Package(
         ),
         .testTarget(
             name: "PlayfitAPITests",
-            dependencies: ["PlayfitAPI", "PlayfitModels"]
+            dependencies: ["PlayfitAPI", "PlayfitModels"],
+            resources: [.process("Fixtures")]
         ),
         .testTarget(
             name: "PlayfitLogicTests",
             dependencies: ["PlayfitLogic", "PlayfitModels"]
+        ),
+        .testTarget(
+            name: "PlayfitFeaturesTests",
+            dependencies: ["PlayfitFeatures", "PlayfitModels"]
         ),
     ]
 )

@@ -33,6 +33,7 @@ extension HTTPPlayfitClient {
         }
 
         var request = URLRequest(url: url)
+        request.timeoutInterval = Self.requestTimeout
         if let token = authSession?.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -50,6 +51,7 @@ extension HTTPPlayfitClient {
         guard let url = components.url else { throw APIError.invalidURL }
 
         var request = URLRequest(url: url)
+        request.timeoutInterval = Self.requestTimeout
         request.httpMethod = "POST"
         request.setValue(PlayfitAPI.supabaseAnonKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -57,10 +59,7 @@ extension HTTPPlayfitClient {
             withJSONObject: ["refresh_token": current.refreshToken]
         )
 
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }

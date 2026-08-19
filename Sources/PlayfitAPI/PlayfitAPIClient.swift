@@ -25,6 +25,8 @@ public struct OnboardingPayload: Codable, Sendable {
 
 public protocol PlayfitAPIClient: Sendable {
     func fetchPlayNext() async throws -> PlayNextModel
+    func fetchAuthoritativeSnapshot() async throws -> AuthoritativeSnapshot
+    func submitCanonicalDecision(_ command: CanonicalDecisionCommand) async throws -> CanonicalDecisionResponse
     func fetchPicks() async throws -> [RankedRecommendation]
     func fetchProfile() async throws -> UserProfile?
     func fetchGameStates() async throws -> [String: UserGameState]
@@ -32,7 +34,12 @@ public protocol PlayfitAPIClient: Sendable {
     func searchGames(query: String) async throws -> [Game]
     func fetchGame(gameId: String) async throws -> Game?
     func saveGameState(gameId: String, state: UserGameState) async throws
-    func saveProfile(profile: UserProfile, gameStates: [String: UserGameState], onboarding: OnboardingPayload) async throws
+    func saveProfile(
+        profile: UserProfile,
+        gameStates: [String: UserGameState],
+        onboarding: OnboardingPayload,
+        stateVersion: String
+    ) async throws -> String
     func fetchPlatforms() async throws -> [Platform]
     func fetchGamesBatch(gameIds: [String]) async throws -> [Game]
     func deleteProfile() async throws

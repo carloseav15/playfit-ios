@@ -1,5 +1,6 @@
 import AuthenticationServices
 import Foundation
+import Logging
 
 #if canImport(UIKit)
 import UIKit
@@ -32,6 +33,9 @@ public final class SupabaseAuthClient: NSObject {
     private let baseURL: URL
     private let anonKey: String
     private let session: URLSession
+    private let logger = Logger(label: "com.playfit.auth")
+
+    private static let requestTimeout: TimeInterval = 20
 
     public init(
         baseURL: URL = PlayfitAPI.supabaseURL,
@@ -100,6 +104,7 @@ public final class SupabaseAuthClient: NSObject {
     /// (the token from a `type=recovery` deep link) setting a new one.
     public func updatePassword(accessToken: String, newPassword: String) async throws {
         var request = URLRequest(url: baseURL.appendingPathComponent("/auth/v1/user"))
+        request.timeoutInterval = Self.requestTimeout
         request.httpMethod = "PUT"
         request.setValue(anonKey, forHTTPHeaderField: "apikey")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
@@ -161,6 +166,7 @@ public final class SupabaseAuthClient: NSObject {
 
     private func makeRequest(path: String, body: [String: String]?) throws -> URLRequest {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.timeoutInterval = Self.requestTimeout
         request.httpMethod = "POST"
         request.setValue(anonKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -171,14 +177,20 @@ public final class SupabaseAuthClient: NSObject {
     }
 
     private func execute(_ request: URLRequest) async throws -> Data {
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AuthError.unexpectedResponse
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthError.unexpectedResponse
+            }
+            logger.debug("Auth request completed: \(request.httpMethod ?? "GET") \(request.url?.path ?? "unknown") - \(httpResponse.statusCode)")
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw AuthError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
+            }
+            return data
+        } catch {
+            logger.error("Auth request failed: \(request.httpMethod ?? "GET") \(request.url?.path ?? "unknown") - \(String(describing: error))")
+            throw error
         }
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw AuthError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
-        }
-        return data
     }
 
     /// Supabase's OAuth authorize and password-recovery redirects both return their
@@ -247,35 +259,4 @@ extension SupabaseAuthClient: ASWebAuthenticationPresentationContextProviding {
         return ASPresentationAnchor()
         #endif
     }
-}
-
-// MARK: - REST Response Types
-
-private struct TokenResponse: Decodable {
-    let accessToken: String
-    let refreshToken: String
-    let expiresIn: Double
-    let user: UserPayload
-
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
-        case expiresIn = "expires_in"
-        case user
-    }
-
-    var session: AuthSession {
-        AuthSession(
-            accessToken: accessToken,
-            refreshToken: refreshToken,
-            expiresAt: Date().addingTimeInterval(expiresIn),
-            userId: user.id,
-            email: user.email
-        )
-    }
-}
-
-private struct UserPayload: Decodable {
-    let id: String
-    let email: String?
 }

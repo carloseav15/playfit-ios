@@ -4,16 +4,26 @@ import PlayfitModels
 struct ProfileState: Codable {
     let gameStates: [String: UserGameState]?
     let profile: UserProfile?
-    let onboarding: OnboardingState?
+    let onboarding: PersistedOnboardingState?
+    let stateVersion: String?
+    let updatedAt: String?
+    let createdAt: String?
 
     enum CodingKeys: String, CodingKey {
         case gameStates = "game_states"
         case profile
         case onboarding
+        case stateVersion = "state_version"
+        case updatedAt = "updated_at"
+        case createdAt = "created_at"
     }
 }
 
-struct OnboardingState: Codable {
+struct PersistedOnboardingState: Codable {
+    let step: String?
+    let platforms: [CanonicalPlatformSelection]?
+    let likedGameIds: [String]?
+    let dislikedGameIds: [String]?
     let onboardingCompletedAt: String?
 }
 
@@ -46,4 +56,16 @@ struct GameSearchResponse: Codable {
 
 struct PlatformsResponse: Codable {
     let platforms: [Platform]
+}
+
+struct ProfileSaveResponse: Decodable {
+    let stateVersion: String
+}
+
+struct CanonicalConflictResponse: Decodable {
+    let conflict: Bool?
+    let needsResync: Bool?
+    let undoUnavailable: Bool?
+    let currentStateVersion: String?
+    let error: String?
 }

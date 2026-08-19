@@ -11,6 +11,7 @@ final class GameDetailClientTests: XCTestCase {
     func testFetchGameDecodesDetailByID() async throws {
         URLProtocolStub.handler = { request in
             XCTAssertEqual(request.url?.path, "/api/games/celeste")
+            XCTAssertEqual(request.timeoutInterval, HTTPPlayfitClient.requestTimeout)
             let data = Data(#"{"gameId":"celeste","title":"Celeste","primaryGenre":"Platformer","tags":["precision"],"availablePlatformIds":["switch_1"],"availablePlatformNames":["Nintendo Switch"],"releaseState":"released"}"#.utf8)
             return (200, data)
         }
@@ -28,6 +29,32 @@ final class GameDetailClientTests: XCTestCase {
         let game = try await makeClient().fetchGame(gameId: "missing")
 
         XCTAssertNil(game)
+    }
+
+    func testFetchGamePropagatesNetworkFailure() async {
+        URLProtocolStub.handler = { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await makeClient().fetchGame(gameId: "offline")
+            XCTFail("Expected the network error to propagate")
+        } catch let error as URLError {
+            XCTAssertEqual(error.code, .notConnectedToInternet)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testFetchGamesBatchSkipsEmptyRequest() async throws {
+        URLProtocolStub.handler = { _ in
+            XCTFail("An empty batch must not make a network request")
+            return (500, Data())
+        }
+
+        let games = try await makeClient().fetchGamesBatch(gameIds: [])
+
+        XCTAssertTrue(games.isEmpty)
     }
 
     private func makeClient() -> HTTPPlayfitClient {

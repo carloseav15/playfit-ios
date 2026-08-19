@@ -43,7 +43,16 @@ extension PlayViewModel {
     /// (mirrors `applyDecisionFeedback` on web, which is likewise generic
     /// over every `DecisionFeedback` case rather than one-off per action).
     private func applyFeedbackWithUndo(_ entry: RankedRecommendation, feedback: DecisionFeedback) {
-        pendingUndo = PendingDecisionUndo(
+        if let canonical = canonicalAction(for: feedback) {
+            beginCanonicalDecision(
+                entry,
+                actionType: canonical.actionType,
+                played: canonical.played
+            )
+            return
+        }
+
+        pendingUndo = .legacy(
             entry: entry,
             previousState: gameStates[entry.game.id],
             wasPicked: pickIds.contains(entry.game.id)
@@ -62,10 +71,27 @@ extension PlayViewModel {
 
     public func undoLastDecision() {
         guard let undo = pendingUndo else { return }
-        pendingUndo = nil
-        let gameId = undo.entry.game.id
+        switch undo {
+        case .canonical(let targetOperationId, let gameId):
+            beginCanonicalUndo(targetOperationId: targetOperationId, gameId: gameId)
+        case .legacy(let entry, let previousState, let wasPicked):
+            pendingUndo = nil
+            undoLegacyDecision(
+                entry: entry,
+                previousState: previousState,
+                wasPicked: wasPicked
+            )
+        }
+    }
 
-        if let previousState = undo.previousState {
+    private func undoLegacyDecision(
+        entry: RankedRecommendation,
+        previousState: UserGameState?,
+        wasPicked: Bool
+    ) {
+        let gameId = entry.game.id
+
+        if let previousState {
             gameStates[gameId] = previousState
             persistGameState(gameId: gameId)
         } else {
@@ -74,9 +100,9 @@ extension PlayViewModel {
             deleteGameStateOrQueue(gameId: gameId)
         }
 
-        if undo.wasPicked {
+        if wasPicked {
             pickIds.insert(gameId)
-            var restoredEntry = undo.entry
+            var restoredEntry = entry
             restoredEntry.inPlayfitPicks = true
             pickRecommendations.removeAll { $0.game.id == gameId }
             pickRecommendations.insert(restoredEntry, at: 0)
@@ -87,6 +113,31 @@ extension PlayViewModel {
         stablePrimaryId = gameId
         rebuildProfileFromCurrentSignals()
         showToast("Undone.")
+    }
+
+    private func canonicalAction(
+        for feedback: DecisionFeedback
+    ) -> (actionType: CanonicalDecisionActionType, played: Bool)? {
+        switch feedback {
+        case .play:
+            (.started, false)
+        case .notForMe:
+            (.notForMe, false)
+        case .loved:
+            (.loved, false)
+        case .liked:
+            (.liked, false)
+        case .playedLoved:
+            (.loved, true)
+        case .playedLiked:
+            (.liked, true)
+        case .playedMixed:
+            (.mixed, true)
+        case .playedDropped:
+            (.dropped, true)
+        default:
+            nil
+        }
     }
 
     public func skip(_ entry: RankedRecommendation) {
@@ -128,6 +179,11 @@ extension PlayViewModel {
         onboardingDislikedGameIds = []
         onboardingCompletedAt = nil
         profile = UserProfile()
+        stateVersion = "0"
+        rankingMetadata = RankingMetadata(profileStateVersion: "0")
+        canonicalStatusMessage = nil
+        hasAuthoritativeSnapshot = false
+        pendingUndo = nil
         error = nil
         syncState = apiClient == nil ? .offline : .idle
         lastSyncedAt = nil
@@ -221,7 +277,7 @@ extension PlayViewModel {
     /// reads the same way on both platforms.
     private func decisionFeedbackMessage(for feedback: DecisionFeedback) -> String {
         switch feedback {
-        case .play: "Set as playing. Your next pick will adapt around it."
+        case .play: "Started. This updates Play Next, not your taste."
         case .later: "Saved for later. Playfit will look past it for now."
         case .loved: "Marked as loved."
         case .liked: "Marked as liked."
@@ -229,7 +285,7 @@ extension PlayViewModel {
         case .notForMe: "Noted. Playfit will find a better fit."
         case .playedLoved: "Already played and loved. Playfit will learn from it."
         case .playedLiked: "Already played and liked."
-        case .playedMixed: "Marked as mixed. Playfit will tune around it."
+        case .playedMixed: "Marked as mixed. This records the game without changing your taste profile."
         case .playedDropped: "Marked as dropped. Playfit will steer away."
         }
     }

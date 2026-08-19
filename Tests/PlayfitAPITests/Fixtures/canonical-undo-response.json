@@ -1,0 +1,51 @@
+{
+  "operationId": "770e8400-e29b-41d4-a716-446655440000",
+  "stateVersion": "7",
+  "state": {
+    "version": 2,
+    "stateVersion": "7",
+    "user": {
+      "onboarding": {
+        "step": "dislikes",
+        "platforms": [{ "platformId": "switch", "status": "available" }],
+        "likedGameIds": ["celeste"],
+        "dislikedGameIds": []
+      },
+      "onboardingCompletedAt": "2026-01-01T00:00:00.000Z",
+      "profile": {
+        "summary": "Restored server profile N+2",
+        "likedGenres": [],
+        "avoidedGenres": [],
+        "likedTags": {},
+        "dislikedTags": {},
+        "ratedCount": 2,
+        "signals": []
+      },
+      "gameStates": {},
+      "lastUpdatedAt": "2026-01-03T00:00:00.000Z"
+    }
+  },
+  "gameState": null,
+  "profile": {
+    "summary": "Restored server profile N+2",
+    "likedGenres": [],
+    "avoidedGenres": [],
+    "likedTags": {},
+    "dislikedTags": {},
+    "ratedCount": 2,
+    "signals": [],
+    "stateVersion": "7"
+  },
+  "recommendationModel": {
+    "primary": null,
+    "alternatives": [],
+    "savedPickIds": [],
+    "stateVersion": "7",
+    "rankingMetadata": { "profileStateVersion": "7", "candidates": [] }
+  },
+  "undo": {
+    "targetOperationId": "660e8400-e29b-41d4-a716-446655440000",
+    "gameId": "hades",
+    "restoredPreviousState": false
+  }
+}

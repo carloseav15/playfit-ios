@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 
 public actor HTTPPlayfitClient: PlayfitAPIClient {
     let baseURL: URL
@@ -6,8 +7,11 @@ public actor HTTPPlayfitClient: PlayfitAPIClient {
     let deviceID: String
     let decoder: JSONDecoder
     let encoder: JSONEncoder
+    let logger = Logger(label: "com.playfit.api")
     var authSession: AuthSession?
     var refreshTask: Task<AuthSession, Error>?
+
+    static let requestTimeout: TimeInterval = 20
 
     public init(baseURL: URL = PlayfitAPI.default, session: URLSession = .shared) {
         self.baseURL = baseURL

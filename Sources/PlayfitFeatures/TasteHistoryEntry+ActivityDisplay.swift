@@ -36,6 +36,8 @@ extension TasteHistoryEntry {
         guard let date = formatter.date(from: updatedAt) else { return "Recent" }
 
         let output = DateFormatter()
+        output.locale = Locale(identifier: "en_US_POSIX")
+        output.calendar = Calendar(identifier: .gregorian)
         output.dateStyle = .medium
         output.timeStyle = .none
         return output.string(from: date)

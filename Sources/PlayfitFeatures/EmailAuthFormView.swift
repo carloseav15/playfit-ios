@@ -71,7 +71,7 @@ struct EmailAuthFormView: View {
                     }
                     Text(primaryButtonTitle)
                         .font(.subheadline.bold())
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.playfitAccentForeground)
                     Spacer()
                 }
                 .padding(.vertical, 14)

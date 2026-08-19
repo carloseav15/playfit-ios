@@ -199,22 +199,261 @@ extension ProfileSignal: Codable {
     }
 }
 
+public struct RankingCandidate: Codable, Hashable, Sendable {
+    public var gameId: String
+    public var rank: Int
+
+    public init(gameId: String, rank: Int) {
+        self.gameId = gameId
+        self.rank = rank
+    }
+}
+
+public struct RankingMetadata: Codable, Hashable, Sendable {
+    public var profileStateVersion: String
+    public var candidates: [RankingCandidate]
+
+    public init(profileStateVersion: String = "", candidates: [RankingCandidate] = []) {
+        self.profileStateVersion = profileStateVersion
+        self.candidates = candidates
+    }
+}
+
 public struct PlayNextModel: Codable, Sendable {
     public var primary: RankedRecommendation?
     public var alternatives: [RankedRecommendation]
     public var savedPickIds: [String]
     public var stateVersion: String
+    public var rankingMetadata: RankingMetadata
 
     public init(
         primary: RankedRecommendation? = nil,
         alternatives: [RankedRecommendation] = [],
         savedPickIds: [String] = [],
-        stateVersion: String = ""
+        stateVersion: String = "",
+        rankingMetadata: RankingMetadata = RankingMetadata()
     ) {
         self.primary = primary
         self.alternatives = alternatives
         self.savedPickIds = savedPickIds
         self.stateVersion = stateVersion
+        self.rankingMetadata = rankingMetadata
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case primary
+        case alternatives
+        case savedPickIds
+        case stateVersion
+        case rankingMetadata
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        primary = try container.decodeIfPresent(RankedRecommendation.self, forKey: .primary)
+        alternatives = try container.decodeIfPresent([RankedRecommendation].self, forKey: .alternatives) ?? []
+        savedPickIds = try container.decodeIfPresent([String].self, forKey: .savedPickIds) ?? []
+        stateVersion = try container.decodeIfPresent(String.self, forKey: .stateVersion) ?? ""
+        rankingMetadata = try container.decodeIfPresent(RankingMetadata.self, forKey: .rankingMetadata)
+            ?? RankingMetadata(profileStateVersion: stateVersion)
+    }
+}
+
+public enum CanonicalDecisionActionType: String, Codable, Sendable {
+    case started
+    case notForMe = "not_for_me"
+    case loved
+    case liked
+    case mixed
+    case dropped
+    case undoDecision = "undo_decision"
+}
+
+public struct CanonicalDecisionCommand: Codable, Hashable, Sendable {
+    public var operationId: String
+    public var expectedStateVersion: String
+    public var actionType: CanonicalDecisionActionType
+    public var gameId: String?
+    public var played: Bool?
+    public var targetOperationId: String?
+
+    public init(
+        operationId: String = UUID().uuidString.lowercased(),
+        expectedStateVersion: String,
+        actionType: CanonicalDecisionActionType,
+        gameId: String? = nil,
+        played: Bool? = nil,
+        targetOperationId: String? = nil
+    ) {
+        self.operationId = operationId
+        self.expectedStateVersion = expectedStateVersion
+        self.actionType = actionType
+        self.gameId = gameId
+        self.played = played
+        self.targetOperationId = targetOperationId
+    }
+}
+
+public struct CanonicalVersionedProfile: Codable, Hashable, Sendable {
+    public var profile: UserProfile
+    public var stateVersion: String
+
+    enum CodingKeys: String, CodingKey {
+        case stateVersion
+    }
+
+    public init(profile: UserProfile, stateVersion: String) {
+        self.profile = profile
+        self.stateVersion = stateVersion
+    }
+
+    public init(from decoder: Decoder) throws {
+        profile = try UserProfile(from: decoder)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        stateVersion = try container.decode(String.self, forKey: .stateVersion)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try profile.encode(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(stateVersion, forKey: .stateVersion)
+    }
+}
+
+public struct CanonicalPlatformSelection: Codable, Hashable, Sendable {
+    public var platformId: String
+    public var status: String
+
+    public init(platformId: String, status: String) {
+        self.platformId = platformId
+        self.status = status
+    }
+}
+
+public struct CanonicalOnboardingState: Codable, Hashable, Sendable {
+    public var step: String
+    public var platforms: [CanonicalPlatformSelection]
+    public var likedGameIds: [String]
+    public var dislikedGameIds: [String]
+
+    public init(
+        step: String,
+        platforms: [CanonicalPlatformSelection],
+        likedGameIds: [String],
+        dislikedGameIds: [String]
+    ) {
+        self.step = step
+        self.platforms = platforms
+        self.likedGameIds = likedGameIds
+        self.dislikedGameIds = dislikedGameIds
+    }
+}
+
+public struct CanonicalUserState: Codable, Hashable, Sendable {
+    public var onboarding: CanonicalOnboardingState
+    public var onboardingCompletedAt: String?
+    public var profile: UserProfile?
+    public var gameStates: [String: UserGameState]
+    public var lastUpdatedAt: String?
+
+    public init(
+        onboarding: CanonicalOnboardingState,
+        onboardingCompletedAt: String?,
+        profile: UserProfile?,
+        gameStates: [String: UserGameState],
+        lastUpdatedAt: String?
+    ) {
+        self.onboarding = onboarding
+        self.onboardingCompletedAt = onboardingCompletedAt
+        self.profile = profile
+        self.gameStates = gameStates
+        self.lastUpdatedAt = lastUpdatedAt
+    }
+}
+
+public struct CanonicalProductState: Codable, Hashable, Sendable {
+    public var version: Int
+    public var stateVersion: String
+    public var user: CanonicalUserState
+
+    public init(version: Int, stateVersion: String, user: CanonicalUserState) {
+        self.version = version
+        self.stateVersion = stateVersion
+        self.user = user
+    }
+}
+
+public struct CanonicalUndoMetadata: Codable, Hashable, Sendable {
+    public var targetOperationId: String
+    public var gameId: String
+    public var restoredPreviousState: Bool
+
+    public init(targetOperationId: String, gameId: String, restoredPreviousState: Bool) {
+        self.targetOperationId = targetOperationId
+        self.gameId = gameId
+        self.restoredPreviousState = restoredPreviousState
+    }
+}
+
+public struct CanonicalDecisionResponse: Codable, Sendable {
+    public var operationId: String
+    public var stateVersion: String
+    public var state: CanonicalProductState
+    public var gameState: UserGameState?
+    public var profile: CanonicalVersionedProfile
+    public var recommendationModel: PlayNextModel
+    public var undo: CanonicalUndoMetadata?
+
+    public init(
+        operationId: String,
+        stateVersion: String,
+        state: CanonicalProductState,
+        gameState: UserGameState?,
+        profile: CanonicalVersionedProfile,
+        recommendationModel: PlayNextModel,
+        undo: CanonicalUndoMetadata? = nil
+    ) {
+        self.operationId = operationId
+        self.stateVersion = stateVersion
+        self.state = state
+        self.gameState = gameState
+        self.profile = profile
+        self.recommendationModel = recommendationModel
+        self.undo = undo
+    }
+}
+
+public struct AuthoritativeSnapshot: Codable, Sendable {
+    public var stateVersion: String
+    public var profile: UserProfile
+    public var gameStates: [String: UserGameState]
+    public var recommendationModel: PlayNextModel
+    public var onboarding: CanonicalOnboardingState
+    public var onboardingCompletedAt: String?
+    public var lastUpdatedAt: String?
+    public var undoTargetOperationId: String?
+    public var undoGameId: String?
+
+    public init(
+        stateVersion: String,
+        profile: UserProfile,
+        gameStates: [String: UserGameState],
+        recommendationModel: PlayNextModel,
+        onboarding: CanonicalOnboardingState,
+        onboardingCompletedAt: String?,
+        lastUpdatedAt: String?,
+        undoTargetOperationId: String? = nil,
+        undoGameId: String? = nil
+    ) {
+        self.stateVersion = stateVersion
+        self.profile = profile
+        self.gameStates = gameStates
+        self.recommendationModel = recommendationModel
+        self.onboarding = onboarding
+        self.onboardingCompletedAt = onboardingCompletedAt
+        self.lastUpdatedAt = lastUpdatedAt
+        self.undoTargetOperationId = undoTargetOperationId
+        self.undoGameId = undoGameId
     }
 }
 

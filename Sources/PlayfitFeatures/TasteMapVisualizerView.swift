@@ -4,24 +4,13 @@ import PlayfitLogic
 import SwiftUI
 
 public struct TasteMapVisualizerView: View {
+    private typealias GameNode = TasteMapGraph.GameNode
     @Environment(\.playViewModel) private var viewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var activeNodeId: String?
     @State private var nodes: [GameNode] = []
     
     public init() {}
-    
-    struct GameNode: Identifiable {
-        let id: String
-        let game: Game
-        let x: Double
-        let y: Double
-        let type: NodeType
-        
-        enum NodeType {
-            case liked, avoided, pending
-        }
-    }
     
     public var body: some View {
         let activeNode = nodes.first { $0.id == activeNodeId } ?? nodes.first
@@ -180,37 +169,13 @@ public struct TasteMapVisualizerView: View {
         }
     }
     
-    private static let terminalStatuses: Set<PlayStatus> = [.beaten, .completed, .abandoned, .dropped]
-
-    private func classify(_ gameId: String, _ state: UserGameState) -> GameNode.NodeType {
-        // Onboarding favorites/miss never get a rating (see `completeOnboarding`),
-        // so without this check they'd fall through to the rating-based logic
-        // below and render as "avoided" — the opposite of what the user picked.
-        if viewModel.onboardingLikedGameIds.contains(gameId) { return .liked }
-        if viewModel.onboardingDislikedGameIds.contains(gameId) { return .avoided }
-
-        let hasRating = (state.rating ?? 0) > 0
-        let isPlaying = state.status == .playing
-        let isTerminal = state.status.map { Self.terminalStatuses.contains($0) } ?? false
-
-        if state.inPlayfitPicks && !isPlaying && !hasRating {
-            return .pending
-        }
-        let isLiked = isPlaying
-            || (state.rating ?? 0) >= 4.0
-            || (isTerminal && (state.rating ?? 0) >= 3.0)
-        return isLiked ? .liked : .avoided
-    }
-
     private func getNodes() -> [GameNode] {
-        var list: [GameNode] = []
-        for (gameId, state) in viewModel.gameStates {
-            guard let game = viewModel.gamesCache[gameId] else { continue }
-            let type = classify(gameId, state)
-            let coords = calculateGameCoordinates(game)
-            list.append(GameNode(id: game.id, game: game, x: coords.x, y: coords.y, type: type))
-        }
-        return list
+        TasteMapGraph.makeNodes(
+            gameStates: viewModel.gameStates,
+            gamesCache: viewModel.gamesCache,
+            likedGameIds: viewModel.onboardingLikedGameIds,
+            dislikedGameIds: viewModel.onboardingDislikedGameIds
+        )
     }
     
     private func nodeColor(_ type: GameNode.NodeType) -> Color {
@@ -265,61 +230,4 @@ public struct TasteMapVisualizerView: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
-    private func calculateGameCoordinates(_ game: Game) -> GameCoordinate {
-        var x = 0.0
-        var y = 0.0
-        
-        let demandingTags = ["souls_like", "unforgiving", "demanding", "survival", "tactical", "deck_building", "stealth"]
-        let chillTags = ["chill", "cozy", "accessible", "short_sessions", "pick_up_and_play", "lighthearted"]
-        let systemsTags = ["open_world", "sandbox", "roguelike", "puzzle", "rhythm", "deck_building"]
-        let storyTags = ["story_rich", "lore_heavy", "linear", "branching_narrative", "text_based", "horror", "dark"]
-        
-        for tag in game.tags {
-            if demandingTags.contains(tag) { x += 28.0 }
-            if chillTags.contains(tag) { x -= 28.0 }
-            if systemsTags.contains(tag) { y += 28.0 }
-            if storyTags.contains(tag) { y -= 28.0 }
-        }
-        
-        if x == 0.0 && y == 0.0 {
-            let genre = (game.primaryGenre).lowercased()
-            if genre.contains("rpg") || genre.contains("role_playing") {
-                x += 10.0
-                y -= 20.0
-            } else if genre.contains("action") || genre.contains("shooter") {
-                x += 20.0
-                y += 15.0
-            } else if genre.contains("adventure") || genre.contains("indie") {
-                x -= 15.0
-                y -= 15.0
-            } else if genre.contains("strategy") || genre.contains("simulation") {
-                x += 25.0
-                y += 25.0
-            } else if genre.contains("puzzle") || genre.contains("casual") {
-                x -= 25.0
-                y += 20.0
-            }
-        }
-        
-        // Deterministic jitter based on game.id
-        var hash = 0
-        for char in game.id.utf8 {
-            hash = Int(char) &+ ((hash &<< 5) &- hash)
-        }
-        let jitterX = Double((hash % 16) - 8)
-        let jitterY = Double(((hash >> 4) % 16) - 8)
-        
-        x += jitterX
-        y += jitterY
-        
-        return GameCoordinate(
-            x: max(-90.0, min(90.0, x)),
-            y: max(-90.0, min(90.0, y))
-        )
-    }
-}
-
-struct GameCoordinate {
-    let x: Double
-    let y: Double
 }

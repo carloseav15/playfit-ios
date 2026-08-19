@@ -91,12 +91,12 @@ public struct DecisionIntroView: View {
                 Button(action: onStart) {
                     Label("Find What to Play", systemImage: "safari")
                         .font(.headline.weight(.black))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.playfitAccentForeground)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .padding(.vertical, 12)
                         .background(
                             LinearGradient(
-                                colors: colorScheme == .dark ? [Color.playfitAccent, Color.playfitIndigo] : [Color.playfitAccent, Color.playfitAccent.opacity(0.85)],
+                                colors: colorScheme == .dark ? [Color.playfitAccent, Color.playfitAccent.opacity(0.85)] : [Color.playfitAccent, Color.playfitAccent.opacity(0.85)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),

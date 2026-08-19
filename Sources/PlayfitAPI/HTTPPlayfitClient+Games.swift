@@ -12,10 +12,7 @@ extension HTTPPlayfitClient {
         components.queryItems = items
         guard let finalURL = components.url else { throw APIError.invalidURL }
         let request = try await makeRequest(url: finalURL)
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }
@@ -26,10 +23,7 @@ extension HTTPPlayfitClient {
     public func fetchGame(gameId: String) async throws -> Game? {
         let url = urlWithDevice("/api/games/\(gameId)")
         let request = try await makeRequest(url: url)
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         if httpResponse.statusCode == 404 { return nil }
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
@@ -42,12 +36,13 @@ extension HTTPPlayfitClient {
     }
 
     public func fetchGamesBatch(gameIds: [String]) async throws -> [Game] {
+        guard !gameIds.isEmpty else { return [] }
         let url = urlWithDevice("/api/games/batch")
         var request = try await makeRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let bodyPayload = ["gameIds": gameIds]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: bodyPayload)
+        request.httpBody = try JSONSerialization.data(withJSONObject: bodyPayload)
 
         struct GamesBatchResponse: Decodable {
             let games: [Game]

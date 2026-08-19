@@ -13,6 +13,7 @@ final class SupabaseAuthClientTests: XCTestCase {
         AuthURLProtocolStub.handler = { request in
             XCTAssertEqual(request.url?.path, "/auth/v1/recover")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "test-anon-key")
             let body = try XCTUnwrap(request.httpBodyData())
             let payload = try JSONDecoder().decode([String: String].self, from: body)

@@ -12,10 +12,9 @@ public enum PlayfitSyncState: Equatable, Sendable {
     case offline
 }
 
-struct PendingDecisionUndo {
-    let entry: RankedRecommendation
-    let previousState: UserGameState?
-    let wasPicked: Bool
+enum PendingDecisionUndo {
+    case canonical(targetOperationId: String, gameId: String)
+    case legacy(entry: RankedRecommendation, previousState: UserGameState?, wasPicked: Bool)
 }
 
 @Observable
@@ -27,6 +26,9 @@ public final class PlayViewModel {
     public var excludedIds: Set<String>
     public var gameStates: [String: UserGameState]
     public var profile: UserProfile
+    public internal(set) var stateVersion: String
+    public internal(set) var rankingMetadata: RankingMetadata
+    public internal(set) var canonicalStatusMessage: String?
     public internal(set) var pickIds: Set<String>
     public internal(set) var isLoading: Bool
     public internal(set) var error: String?
@@ -38,6 +40,8 @@ public final class PlayViewModel {
     public var toastActionTitle: String?
     public var toastAction: (() -> Void)?
     var pendingUndo: PendingDecisionUndo?
+    var canonicalDrainInProgress = false
+    var hasAuthoritativeSnapshot = false
     public var onboardingStarted: Bool
     public var onboardingCompleted: Bool
     public var selectedPlatformIds: Set<String>
@@ -70,6 +74,9 @@ public final class PlayViewModel {
         self.excludedIds = []
         self.gameStates = [:]
         self.profile = profile
+        self.stateVersion = "0"
+        self.rankingMetadata = RankingMetadata(profileStateVersion: "0")
+        self.canonicalStatusMessage = nil
         self.pickIds = Set(recommendations.filter(\.inPlayfitPicks).map(\.game.id))
         self.isLoading = false
         self.syncState = apiClient == nil ? .offline : .idle
@@ -112,6 +119,6 @@ public final class PlayViewModel {
     }
 
     public var pendingActionsCount: Int {
-        storage.loadPendingActions().count
+        storage.loadPendingActions().count + storage.loadCanonicalDecisions().count
     }
 }

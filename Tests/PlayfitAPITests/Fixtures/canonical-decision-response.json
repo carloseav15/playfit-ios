@@ -1,0 +1,86 @@
+{
+  "operationId": "660e8400-e29b-41d4-a716-446655440000",
+  "stateVersion": "6",
+  "state": {
+    "version": 2,
+    "stateVersion": "6",
+    "user": {
+      "onboarding": {
+        "step": "dislikes",
+        "platforms": [{ "platformId": "switch", "status": "available" }],
+        "likedGameIds": ["celeste"],
+        "dislikedGameIds": []
+      },
+      "onboardingCompletedAt": "2026-01-01T00:00:00.000Z",
+      "profile": {
+        "summary": "Server profile N+1",
+        "likedGenres": ["action"],
+        "avoidedGenres": [],
+        "likedTags": { "roguelike": 2 },
+        "dislikedTags": {},
+        "ratedCount": 3,
+        "signals": []
+      },
+      "gameStates": {
+        "hades": {
+          "gameId": "hades",
+          "title": "Hades",
+          "rating": 5,
+          "inBacklog": false,
+          "inWishlist": false,
+          "inPlayfitPicks": false,
+          "excluded": false,
+          "source": "manual",
+          "createdAt": "2026-01-02T00:00:00.000Z",
+          "updatedAt": "2026-01-02T00:00:00.000Z"
+        }
+      },
+      "lastUpdatedAt": "2026-01-02T00:00:00.000Z"
+    }
+  },
+  "gameState": {
+    "gameId": "hades",
+    "title": "Hades",
+    "rating": 5,
+    "inBacklog": false,
+    "inWishlist": false,
+    "inPlayfitPicks": false,
+    "excluded": false,
+    "source": "manual",
+    "createdAt": "2026-01-02T00:00:00.000Z",
+    "updatedAt": "2026-01-02T00:00:00.000Z"
+  },
+  "profile": {
+    "summary": "Server profile N+1",
+    "likedGenres": ["action"],
+    "avoidedGenres": [],
+    "likedTags": { "roguelike": 2 },
+    "dislikedTags": {},
+    "ratedCount": 3,
+    "signals": [],
+    "stateVersion": "6"
+  },
+  "recommendationModel": {
+    "primary": {
+      "game": { "gameId": "celeste", "title": "Celeste" },
+      "affinityScore": 94,
+      "riskScore": 4,
+      "confidence": "high",
+      "fitReasons": ["Matches your preferred challenge."],
+      "cautionReasons": [],
+      "platformAvailability": "available",
+      "accessStatus": "playable",
+      "inBacklog": false,
+      "inWishlist": false,
+      "inPlayfitPicks": false,
+      "similarGames": []
+    },
+    "alternatives": [],
+    "savedPickIds": [],
+    "stateVersion": "6",
+    "rankingMetadata": {
+      "profileStateVersion": "6",
+      "candidates": [{ "gameId": "celeste", "rank": 1 }]
+    }
+  }
+}

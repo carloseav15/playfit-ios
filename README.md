@@ -8,7 +8,7 @@ native iOS showcase of that product; full product context lives at
 
 This repo is a subordinate/portfolio implementation of the Playfit mobile product vision.
 
-This folder intentionally starts as a Swift Package, not an Xcode project. The goal is to keep the first pass reviewable from the terminal, then create the Xcode app target once signing, bundle id, app icons, and simulator validation are ready.
+The code is organized as a Swift Package consumed by the `PlayfitIOS` Xcode app target. This keeps domain, API, storage, design-system, and feature code reviewable from the terminal while preserving a native iOS app entry point.
 
 ## Scope
 
@@ -26,18 +26,19 @@ This is not a full web port. The target is a native iOS showcase that feels curr
 
 - Swift 6 package layout.
 - SwiftUI views.
-- Mock data while the native UI is shaped.
-- Modular targets for models, mocks, design system, and features.
-- CLI smoke check executable for environments without full Xcode test support.
+- Typed API clients for Playfit and Supabase authentication.
+- SwiftData-backed local cache and pending offline actions.
+- Modular targets for models, mocks, design system, logic, API, storage, and features.
+- CLI smoke check executable plus package and Xcode UI tests.
 
-## Intended 2026 Stack
+## Platform and Validation
 
-- SwiftUI for UI.
-- Observation for app state.
+- SwiftUI for UI on iOS 18 and newer.
+- Observation-compatible state flow through the main-actor `PlayViewModel`.
 - SwiftData for offline cache and sync queue.
-- Supabase Swift SDK for auth and API access.
-- Liquid Glass through standard Apple components first, then selective custom glass surfaces.
-- Swift Testing or XCTest once the full Xcode app target exists.
+- Typed URLSession clients for Playfit and Supabase auth endpoints.
+- Standard Apple materials and controls, with selective custom glass surfaces.
+- XCTest package tests and deterministic Xcode UI tests.
 
 ## Folder Layout
 
@@ -76,12 +77,11 @@ xcodebuild \
   build
 ```
 
-The current app icon is intentionally unset. Add a real Playfit app icon before App Store/TestFlight work.
+The app target, bundle identifier, app icon catalog, and simulator validation are present. Review signing, release configuration, and final icon artwork before App Store/TestFlight work.
 
 ## Next Milestones
 
-1. Open this package in Xcode and create a real iOS app target.
-2. Add app icons, bundle id, signing, and launch screen.
-3. Replace mock data with API clients for Playfit product endpoints.
-4. Add SwiftData persistence for recommendations, picks, and pending actions.
-5. Validate Liquid Glass treatment on iOS 26 simulator/device.
+1. Split the largest synchronization, authentication, and visualization files by responsibility.
+2. Expand error-path, sync-queue, and accessibility coverage.
+3. Validate the final Liquid Glass treatment on the current iOS simulator and a physical device.
+4. Complete signing and release configuration for TestFlight.

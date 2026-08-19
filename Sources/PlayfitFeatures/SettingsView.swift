@@ -134,7 +134,7 @@ public struct SettingsView: View {
                         } label: {
                             Text("Sign In / Sync")
                                 .font(.caption.bold())
-                                .foregroundColor(.white)
+                                .foregroundColor(Color.playfitAccentForeground)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                                 .background(Color.playfitAccent, in: RoundedRectangle(cornerRadius: 12))

@@ -5,10 +5,7 @@ extension HTTPPlayfitClient {
     public func fetchProfile() async throws -> UserProfile? {
         let url = urlWithDevice("/api/profile")
         let request = try await makeRequest(url: url)
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard httpResponse.statusCode == 200 else {
             if httpResponse.statusCode == 404 { return nil }
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
@@ -20,10 +17,7 @@ extension HTTPPlayfitClient {
     public func fetchGameStates() async throws -> [String: UserGameState] {
         let url = urlWithDevice("/api/profile")
         let request = try await makeRequest(url: url)
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard httpResponse.statusCode == 200 else {
             if httpResponse.statusCode == 404 { return [:] }
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
@@ -35,10 +29,7 @@ extension HTTPPlayfitClient {
     public func fetchOnboardingCompletedAt() async throws -> String? {
         let url = urlWithDevice("/api/profile")
         let request = try await makeRequest(url: url)
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard httpResponse.statusCode == 200 else {
             if httpResponse.statusCode == 404 { return nil }
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
@@ -53,16 +44,18 @@ extension HTTPPlayfitClient {
         request.httpMethod = "PATCH"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(state)
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }
     }
 
-    public func saveProfile(profile: UserProfile, gameStates: [String: UserGameState], onboarding: OnboardingPayload) async throws {
+    public func saveProfile(
+        profile: UserProfile,
+        gameStates: [String: UserGameState],
+        onboarding: OnboardingPayload,
+        stateVersion: String
+    ) async throws -> String {
         let url = urlWithDevice("/api/profile")
         var request = try await makeRequest(url: url)
         request.httpMethod = "POST"
@@ -71,26 +64,22 @@ extension HTTPPlayfitClient {
             deviceID: deviceID,
             profile: profile,
             gameStates: gameStates,
-            onboarding: onboarding
+            onboarding: onboarding,
+            stateVersion: stateVersion
         ))
 
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }
+        return try decoder.decode(ProfileSaveResponse.self, from: data).stateVersion
     }
 
     public func deleteProfile() async throws {
         let url = urlWithDevice("/api/profile")
         var request = try await makeRequest(url: url)
         request.httpMethod = "DELETE"
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }
@@ -100,10 +89,7 @@ extension HTTPPlayfitClient {
         let url = urlWithDevice("/api/profile/games/\(gameId)")
         var request = try await makeRequest(url: url)
         request.httpMethod = "DELETE"
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
-        }
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }

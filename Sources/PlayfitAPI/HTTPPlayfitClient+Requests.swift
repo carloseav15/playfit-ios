@@ -8,11 +8,22 @@ extension HTTPPlayfitClient {
         return components.url ?? baseURL.appendingPathComponent(path)
     }
 
-    func decode<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.unexpectedResponse
+    func requestData(for request: URLRequest) async throws -> (data: Data, response: HTTPURLResponse) {
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.unexpectedResponse
+            }
+            logger.debug("Request completed: \(request.httpMethod ?? "GET") \(request.url?.path ?? "unknown") - \(httpResponse.statusCode)")
+            return (data, httpResponse)
+        } catch {
+            logger.error("Request failed: \(request.httpMethod ?? "GET") \(request.url?.path ?? "unknown") - \(String(describing: error))")
+            throw error
         }
+    }
+
+    func decode<T: Decodable>(_ request: URLRequest) async throws -> T {
+        let (data, httpResponse) = try await requestData(for: request)
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server(httpResponse.statusCode, String(data: data, encoding: .utf8))
         }

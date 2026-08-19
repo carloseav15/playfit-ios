@@ -68,7 +68,8 @@ final class ProfileEnvelopeCodingTests: XCTestCase {
                 likedGameIds: ["hades"],
                 dislikedGameIds: ["elden-ring"],
                 onboardingCompletedAt: nil
-            )
+            ),
+            stateVersion: "5"
         )
 
         let data = try JSONEncoder().encode(body)
@@ -80,6 +81,7 @@ final class ProfileEnvelopeCodingTests: XCTestCase {
         let platforms = try XCTUnwrap(onboarding["platforms"] as? [[String: Any]])
 
         XCTAssertEqual(json["deviceId"] as? String, "device-1")
+        XCTAssertEqual(json["stateVersion"] as? String, "5")
         XCTAssertEqual(hades["gameId"] as? String, "hades")
         XCTAssertEqual(hades["source"] as? String, "manual")
         XCTAssertEqual(hades["status"] as? String, "completed")

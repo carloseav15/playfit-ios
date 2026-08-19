@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TodayLoadingState: View {
     let slowLoading: Bool
+    let statusMessage: String?
 
     var body: some View {
         VStack(spacing: PlayfitSpacing.lg) {
@@ -11,7 +12,7 @@ struct TodayLoadingState: View {
                     Circle()
                         .fill(Color.playfitAccent)
                         .frame(width: 8, height: 8)
-                    Text("Finding recommendations...")
+                    Text(statusMessage ?? "Finding recommendations...")
                         .font(.headline)
                 }
 

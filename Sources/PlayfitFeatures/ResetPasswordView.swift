@@ -75,7 +75,7 @@ struct ResetPasswordView: View {
                                 }
                                 Text(isLoading ? "Updating…" : "Update Password")
                                     .font(.subheadline.bold())
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color.playfitAccentForeground)
                                 Spacer()
                             }
                             .padding(.vertical, 14)

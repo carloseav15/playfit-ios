@@ -6,7 +6,8 @@ enum ProfileSaveRequestMapper {
         deviceID: String,
         profile: UserProfile,
         gameStates: [String: UserGameState],
-        onboarding: OnboardingPayload
+        onboarding: OnboardingPayload,
+        stateVersion: String
     ) -> ProfileSaveBody {
         let now = ISO8601DateFormatter().string(from: Date())
         let mappedStates = Dictionary(uniqueKeysWithValues: gameStates.map { gameId, state in
@@ -30,6 +31,7 @@ enum ProfileSaveRequestMapper {
 
         return ProfileSaveBody(
             deviceId: deviceID,
+            stateVersion: stateVersion,
             gameStates: mappedStates,
             profile: ProfileSaveProfile(
                 summary: profile.summary,
@@ -57,6 +59,7 @@ enum ProfileSaveRequestMapper {
 
 struct ProfileSaveBody: Encodable {
     let deviceId: String?
+    let stateVersion: String
     let gameStates: [String: ProfileSaveGameState]
     let profile: ProfileSaveProfile?
     let onboarding: ProfileSaveOnboarding

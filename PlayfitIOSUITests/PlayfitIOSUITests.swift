@@ -53,6 +53,15 @@ final class PlayfitIOSUITests: XCTestCase {
         }
     }
 
+    func testIntroControlsExposeDescriptiveAccessibilityLabels() throws {
+        launch()
+        let startButton = app.buttons["playfit.intro.start"]
+        try XCTSkipUnless(waitUntil(timeout: 20) { startButton.exists }, "Intro screen did not appear")
+
+        XCTAssertFalse(startButton.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        XCTAssertTrue(app.buttons["playfit.intro.signin"].label.localizedCaseInsensitiveContains("sign"))
+    }
+
     // MARK: - Onboarding (reachable from Intro without seeding)
 
     func testOnboardingPlatformsStepReachableFromIntro() throws {
