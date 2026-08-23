@@ -18,7 +18,7 @@ Source files:
 
 ```text
 /Users/carancibia/Projects/playfit/product/apps/web/src/app/(play)
-/Users/carancibia/Projects/playfit/product/apps/web/src/components/playfit-mvp
+/Users/carancibia/Projects/playfit/product/apps/web/src/components/playfit
 ```
 
 ## Native iOS Destinations

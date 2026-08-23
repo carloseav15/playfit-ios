@@ -142,6 +142,25 @@ final class PlayfitFeaturesTests: XCTestCase {
         XCTAssertFalse(viewModel.isLoading)
     }
 
+    func testCompletedOnboardingWithoutCachedRecommendationsExposesBlockingLoadState() {
+        LocalStorageService.shared.saveProfile(
+            UserProfile(summary: "Ready to sync"),
+            platformIds: ["pc"],
+            onboardingCompleted: true
+        )
+        LocalStorageService.shared.saveOnboardingMetadata(
+            likedIds: ["celeste"],
+            dislikedIds: ["hades"],
+            completedAt: "2026-08-23T00:00:00Z"
+        )
+        let viewModel = PlayViewModel()
+
+        viewModel.loadLocal()
+
+        XCTAssertTrue(viewModel.isLoading)
+        XCTAssertEqual(viewModel.error, "No cached recommendations available. Connect to sync.")
+    }
+
     func testSyncResolvesNeedsResyncBySavingProfileAndRetrying() async {
         let recommendation = RankedRecommendation(
             game: Game(id: "celeste", title: "Celeste", primaryGenre: "Platformer"),
