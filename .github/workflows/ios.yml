@@ -1,0 +1,24 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    # macos-15 ships a recent Xcode/Swift toolchain by default. If `swift build` fails
+    # with a toolchain-version error, pin an explicit Xcode via `xcode-select` here —
+    # deliberately not guessing a specific Xcode path without verifying it exists on
+    # the runner image first.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift build
+        run: swift build
+      - name: Swift test
+        run: swift test
