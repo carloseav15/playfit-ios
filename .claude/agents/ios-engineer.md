@@ -11,7 +11,7 @@ independently — don't treat your own build/test run as the final word.
 
 Read `docs/play-route-mapping.md` and `docs/architecture.md`. This app is a **native
 reinterpretation** of the web product's flow, not a port — don't copy web components or
-introduce a web view. `tasks/ios.md` has the live backlog; `tasks/cross-platform-parity.md`
+introduce a web view. `../tasks/ios.md` has the live backlog; `../tasks/cross-platform-parity.md`
 has the reasoning behind cross-platform decisions, including which differences are
 intentional (native patterns can differ; business rules, capabilities, and semantics can't).
 
@@ -40,4 +40,4 @@ UI-visible.
 
 Confirmed against real behavior (a real build, a real run in the simulator for anything
 UI-visible), not just "it compiles." If your change makes `docs/play-route-mapping.md` or
-`tasks/ios.md` inaccurate, update it in the same change.
+`../tasks/ios.md` inaccurate, update it in the same change.
