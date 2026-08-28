@@ -41,3 +41,9 @@ UI-visible.
 Confirmed against real behavior (a real build, a real run in the simulator for anything
 UI-visible), not just "it compiles." If your change makes `docs/play-route-mapping.md` or
 `../tasks/ios.md` inaccurate, update it in the same change.
+
+## High-risk changes
+
+For anything touching auth, the shared contract with `packages/core`, or a cross-platform
+decision, a second-pass review from another tool on top of `qa` is worth getting — see
+`../roles/external-review-policy.md` for what makes that actually worth something.
